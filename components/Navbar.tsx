@@ -41,7 +41,7 @@ const Navbar = async () => {
                 Community
               </Link>
               <Link
-                href="/room"
+                href="/rooms"
                 className="p-2 text-gray-600 hover:bg-gray-100/80 rounded-xl"
               >
                 Room

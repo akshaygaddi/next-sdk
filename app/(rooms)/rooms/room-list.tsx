@@ -106,6 +106,7 @@ export function RoomList() {
                             )}
                         </div>
                     </CardContent>
+
                 </Card>
             ))}
         </div>
