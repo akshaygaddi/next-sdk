@@ -1,22 +1,18 @@
 import Link from "next/link";
-import {createClient} from "@/utils/supabase/server";
+// import {createClient} from "@/utils/supabase/server";
 
 import {Button} from "@/components/ui/button";
-import {login} from "@/app/auth/login/actions";
+
 import {ArrowRight} from "lucide-react";
 import {logout} from "@/app/auth/signout/action";
+import {getUserData} from "@/utils/getSupabase/getServer";
+
+import React from "react";
+import {DarkModeToggle} from "@/components/DarkModeToggle";
 
 
 const Navbar = async () => {
-
-  const supabase = await createClient()
-  // const {data: {user}} = await supabase.auth.getUser()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-
+  const { user} = await getUserData();
   return (
     <nav className=" w-full  bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -81,6 +77,7 @@ const Navbar = async () => {
               user ? (
                   <div>
                     <form>
+                      <label>{user.email}</label>
                       <Button className="w-full" formAction={logout}>
                         logout
                         <ArrowRight className="ml-2" size={18}/>
@@ -104,6 +101,8 @@ const Navbar = async () => {
                   </div>
               )
             }
+
+            <DarkModeToggle/>
 
 
             {/* Mobile Menu Toggle */}

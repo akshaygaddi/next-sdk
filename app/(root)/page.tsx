@@ -4,6 +4,7 @@ import { ArrowRight, Users, MessageSquare, CheckCircle, Globe } from 'lucide-rea
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
+
 export default function HomePage() {
   return (
       <div className="bg-background text-foreground">
@@ -16,7 +17,12 @@ export default function HomePage() {
   )
 }
 
-function HeroSection() {
+async function HeroSection() {
+
+
+
+
+
   return (
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         <Image
