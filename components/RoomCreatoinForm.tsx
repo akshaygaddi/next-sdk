@@ -1,33 +1,61 @@
 'use client'
-
+import React from "react"
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createRoom } from '@/app/room/actions'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {createClient} from "@/utils/supabase/client";
+import {toast} from "@/hooks/use-toast";
 
-export function CreateRoomForm() {
+
+export default function RoomCreationForm() {
     const [name, setName] = useState('')
-    const [roomType, setRoomType] = useState('public')
+    const [type, setType] = useState('public')
     const [password, setPassword] = useState('')
-    const [duration, setDuration] = useState('60')
+    const [expiresIn, setExpiresIn] = useState('')
     const router = useRouter()
+    const supabase = createClient()
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         try {
-            const room = await createRoom({
+            const {
+                data: { user },
+            } = await supabase.auth.getUser()
+
+            if (!user) throw new Error('User not authenticated')
+
+            const expiresAt = expiresIn
+                ? new Date(Date.now() + parseInt(expiresIn) * 60 * 1000).toISOString()
+                : null
+
+            const { data, error } = await supabase.from('rooms').insert({
                 name,
-                roomType: roomType as 'public' | 'private',
-                password: roomType === 'private' ? password : undefined,
-                duration: parseInt(duration),
+                type,
+                password: type === 'private' ? password : null,
+                created_by: user.id,
+                expires_at: expiresAt,
+            }).select()
+
+            if (error) throw error
+
+
+            toast({
+                title: 'Room created successfully!',
+                description: `Room ID: ${data[0].id}`,
             })
-            router.push(`/room/${room.id}`)
+            router.refresh()
         } catch (error) {
             console.error('Error creating room:', error)
+            toast({
+                title: 'Error creating room',
+                description: 'Please try again later.',
+                variant: 'destructive',
+            })
         }
     }
 
@@ -42,7 +70,7 @@ export function CreateRoomForm() {
                     required
                 />
             </div>
-            <RadioGroup value={roomType} onValueChange={setRoomType}>
+            <RadioGroup value={type} onValueChange={setType}>
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="public" id="public" />
                     <Label htmlFor="public">Public</Label>
@@ -52,7 +80,7 @@ export function CreateRoomForm() {
                     <Label htmlFor="private">Private</Label>
                 </div>
             </RadioGroup>
-            {roomType === 'private' && (
+            {type === 'private' && (
                 <div>
                     <Label htmlFor="password">Password</Label>
                     <Input
@@ -65,23 +93,16 @@ export function CreateRoomForm() {
                 </div>
             )}
             <div>
-                <Label htmlFor="duration">Duration</Label>
-                <Select value={duration} onValueChange={setDuration}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="60">1 hour</SelectItem>
-                        <SelectItem value="120">2 hours</SelectItem>
-                        <SelectItem value="180">3 hours</SelectItem>
-                        <SelectItem value="360">6 hours</SelectItem>
-                        <SelectItem value="1440">24 hours</SelectItem>
-                    </SelectContent>
-                </Select>
+                <Label htmlFor="expiresIn">Expires in (minutes, optional)</Label>
+                <Input
+                    id="expiresIn"
+                    type="number"
+                    value={expiresIn}
+                    onChange={(e) => setExpiresIn(e.target.value)}
+                />
             </div>
-            <Button type="submit" className="bg-orange-500 text-white hover:bg-orange-600">
-                Create Room
-            </Button>
+            <Button type="submit">Create Room</Button>
         </form>
     )
 }
+

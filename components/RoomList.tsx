@@ -1,28 +1,49 @@
-import { getRooms, joinRoom } from '@/app/room/actions'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
-export async function RoomList() {
-    const rooms = await getRooms()
+import { cookies } from 'next/headers'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {createClient} from "@/utils/supabase/server";
+
+export default async function RoomList() {
+    const supabase =await createClient()
+
+    const { data: rooms, error } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching rooms:', error)
+        return <div>Error loading rooms. Please try again later.</div>
+    }
 
     return (
-        <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {rooms.map((room) => (
-                <div key={room.id} className="border border-gray-200 p-4 rounded-lg">
-                    <h3 className="text-xl font-semibold mb-2">{room.name}</h3>
-                    <p className="text-sm text-gray-500 mb-2">
-                        Type: {room.room_type}
-                    </p>
-                    <p className="text-sm text-gray-500 mb-2">
-                        Expires: {new Date(room.time_limit).toLocaleString()}
-                    </p>
-                    <Link href={`/room/${room.id}`} passHref>
-                        <Button className="bg-orange-500 text-white hover:bg-orange-600">
-                            {room.room_type === 'private' ? 'Join Private Room' : 'Join Room'}
-                        </Button>
-                    </Link>
-                </div>
+                <Link href={`/rooms/${room.id}`} key={room.id}>
+                    <Card className="transition-all hover:shadow-lg">
+                        <CardHeader>
+                            <CardTitle>{room.name}</CardTitle>
+                            <CardDescription>
+                                Created {new Date(room.created_at).toLocaleString()}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Badge variant={room.type === 'public' ? 'default' : 'secondary'}>
+                                {room.type}
+                            </Badge>
+                            {room.expires_at && (
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Expires: {new Date(room.expires_at).toLocaleString()}
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </Link>
             ))}
         </div>
     )
 }
+
