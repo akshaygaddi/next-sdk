@@ -39,7 +39,6 @@ export async function updateSession(request: NextRequest) {
 
     // console.log(user);
 
-
     if (error) {
       // use if required
       // console.error("Error fetching user maybe user is not logged in:", error.message);

@@ -4,9 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/darkMode/theme-provider";
 import Navbar from "@/components/navbar/Navbar";
-import { SessionProvider } from "next-auth/react";
-import { Processor } from "postcss";
-import { Providers } from "@/providers";
+import { Providers } from "@/providers/providers";
 
 const ibm_plex_sans = IBM_Plex_Sans({
   weight: ["400", "500", "600", "700"], // Optional: specify font weights you'll use

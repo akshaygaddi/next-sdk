@@ -1,47 +1,50 @@
-import NextAuth from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { createClient } from '@/utils/supabase/server'
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { createClient } from "@/utils/supabase/server";
 
 const handler = NextAuth({
   providers: [
     CredentialsProvider({
-      name: 'Credentials',
+      name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "text", placeholder: "jsmith@example.com" },
-        password: { label: "Password", type: "password" }
+        email: {
+          label: "Email",
+          type: "text",
+          placeholder: "jsmith@example.com",
+        },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials, req) {
-        if (!credentials?.email || !credentials?.password) return null
+        if (!credentials?.email || !credentials?.password) return null;
 
-        const supabase =await createClient()
+        const supabase = await createClient();
         const { data, error } = await supabase.auth.signInWithPassword({
           email: credentials.email,
           password: credentials.password,
-        })
+        });
 
-        if (error || !data.user) return null
-        return { id: data.user.id, email: data.user.email }
-      }
-    })
+        if (error || !data.user) return null;
+        return { id: data.user.id, email: data.user.email };
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
+        token.id = user.id;
       }
-      return token
+      return token;
     },
     async session({ session, token }) {
       if (session.user) {
-       session.user.id = token.id as string
+        session.user.id = token.id as string;
       }
-      return session
-    }
+      return session;
+    },
   },
   pages: {
-    signIn: '/auth/signin',
-  }
-})
+    signIn: "/auth/signin",
+  },
+});
 
-export { handler as GET, handler as POST }
-
+export { handler as GET, handler as POST };

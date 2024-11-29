@@ -1,50 +1,49 @@
+import { notFound } from "next/navigation";
+import RoomChat from "@/components/RoomChat";
+import PasswordPrompt from "@/components/PasswordPrompt";
+import { createClient } from "@/utils/supabase/server";
+// app/rooms/[id]/page.tsx
 
-import { cookies } from 'next/headers'
-import { notFound } from 'next/navigation'
-import RoomChat from '@/components/RoomChat'
-import PasswordPrompt from '@/components/PasswordPrompt'
-import {createClient} from "@/utils/supabase/server";
+export default async function RoomChatting({
+                                             params,
+                                           }: {
+  params: Promise<{ id: string }>;
+}) {
+  // Resolve the promise from `params`
+  const { id } = await params;
 
-export default async function RoomPage({ params }: { params: Promise<{ id: string }> }) {
-    // Resolve the promise from `params`
-    const { id } = await params
+  const supabase = await createClient();
 
-    console.log(id)
+  const { data: room } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-    const supabase =await createClient()
+  if (!room) {
+    notFound();
+  }
 
-    const { data: room } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('id', id)
-        .single()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (!room) {
-        notFound()
-    }
+  if (!user) {
+    // Redirect to login page or show an error
+    return <div>Please log in to join a room.</div>;
+  }
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+  // Check if the user is already a participant
+  const { data: participant } = await supabase
+    .from("room_participants")
+    .select("*")
+    .eq("room_id", room.id)
+    .eq("user_id", user.id)
+    .single();
 
-    if (!user) {
-        // Redirect to login page or show an error
-        return <div>Please log in to join a room.</div>
-    }
+  if (room.type === "private" && !participant) {
+    return <PasswordPrompt room={room} />;
+  }
 
-
-    // Check if the user is already a participant
-    const { data: participant } = await supabase
-        .from('room_participants')
-        .select('*')
-        .eq('room_id', room.id)
-        .eq('user_id', user.id)
-        .single()
-
-    if (room.type === 'private' && !participant) {
-        return <PasswordPrompt room={room} />
-    }
-
-    return <RoomChat room={room} initialParticipant={participant} />
+  return <RoomChat room={room} initialParticipant={participant} />;
 }
-
