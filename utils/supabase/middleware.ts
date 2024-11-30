@@ -1,12 +1,14 @@
-
 import { NextResponse, type NextRequest } from "next/server";
-import {createServerClient} from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 
 export async function updateSession(request: NextRequest) {
   console.log("Middleware triggered");
 
   // Validate environment variables
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
     throw new Error("Supabase environment variables are missing.");
   }
 
@@ -14,23 +16,28 @@ export async function updateSession(request: NextRequest) {
 
   // Initialize Supabase client with cookie management
   const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll: () => request.cookies.getAll(),
-          setAll: (cookiesToSet) => {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options);
-            });
-          },
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
         },
-      }
+      },
+    },
   );
 
   try {
     // Get the authenticated user
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    // console.log(user);
 
     if (error) {
       // use if required
@@ -38,14 +45,17 @@ export async function updateSession(request: NextRequest) {
     }
 
     const isAuthPage = ["/auth/login", "/auth/signup"].some((path) =>
-        request.nextUrl.pathname.startsWith(path)
+      request.nextUrl.pathname.startsWith(path),
     );
-    const isProtectedPage = !isAuthPage && !request.nextUrl.pathname.startsWith("/public");
+    const isProtectedPage =
+      !isAuthPage && !request.nextUrl.pathname.startsWith("/public");
 
     // Redirect logic
     if (!user && isProtectedPage) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/auth/login";
+      // loginUrl.pathname = "/auth/signup";
+
       loginUrl.searchParams.set("redirect", request.nextUrl.pathname); // Preserve original path
       return NextResponse.redirect(loginUrl);
     }
