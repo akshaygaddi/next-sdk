@@ -1,4 +1,3 @@
-
 "use client";
 // app/rooms/layout.tsx
 import { ThemeProvider } from "next-themes";

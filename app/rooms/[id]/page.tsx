@@ -5,8 +5,8 @@ import { createClient } from "@/utils/supabase/server";
 // app/rooms/[id]/page.tsx
 
 export default async function RoomChatting({
-                                             params,
-                                           }: {
+  params,
+}: {
   params: Promise<{ id: string }>;
 }) {
   // Resolve the promise from `params`

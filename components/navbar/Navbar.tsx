@@ -24,7 +24,7 @@ const Navbar = async () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            {["Home", "Community", "Room", "About Us"].map((item, index) => (
+            {["Home", "Community", "Rooms", "About Us"].map((item, index) => (
               <Link
                 key={index}
                 href={`/${item.toLowerCase().replace(" ", "")}`}

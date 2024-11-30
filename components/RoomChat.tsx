@@ -9,18 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Search,
-  Send,
-  Users,
-  ArrowLeftFromLine,
-  Trash2,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Search, Send, Users, ArrowLeftFromLine, Trash2, PanelLeftClose, PanelLeftOpen, Loader2, AlertCircle, Eye, EyeOff, Clock } from 'lucide-react';
+import { formatDistanceToNow, formatDistance } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import {
   Tooltip,
@@ -28,12 +18,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { terminateRoom, TerminateRoom } from "@/utils/room/commonLogic";
+import { terminateRoom } from "@/utils/room/commonLogic";
 
 interface Room {
   id: string;
   name: string;
+  type: 'public' | 'private';
   created_by: string;
+  expires_at: string;
+  is_active: boolean;
+  private_room_id: string | null;
+  participant_count: number;
 }
 
 interface Participant {
@@ -47,15 +42,17 @@ interface Message {
   content: string;
   created_at: string;
   user_id: string;
+  type: string;
 }
 
-export default function RoomChat({
-                                   room,
-                                   initialParticipant,
-                                   selectedRoom,
-                                 }: RoomChatProps) {
-  const [participants, setParticipants] = useState([]);
-  const [messages, setMessages] = useState([]);
+interface RoomChatProps {
+  room: Room;
+  initialParticipant: Participant;
+}
+
+export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatProps) {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [showParticipants, setShowParticipants] = useState(true);
@@ -64,6 +61,7 @@ export default function RoomChat({
   const [error, setError] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState("");
 
   const supabase = createClient();
   const router = useRouter();
@@ -73,7 +71,7 @@ export default function RoomChat({
 
   // Enhanced filtering with fuzzy search
   const filteredParticipants = participants.filter((participant) =>
-    participant.user_id.toLowerCase().includes(searchQuery.toLowerCase()),
+    participant.user_id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Improved message grouping with time-based clustering
@@ -87,6 +85,26 @@ export default function RoomChat({
     return groups;
   };
 
+  // Room expiration timer
+  useEffect(() => {
+    const updateTimeRemaining = () => {
+      if (room.expires_at) {
+        const now = new Date();
+        const expiresAt = new Date(room.expires_at);
+        if (expiresAt > now) {
+          setTimeRemaining(formatDistance(expiresAt, now, { addSuffix: true }));
+        } else {
+          setTimeRemaining("Expired");
+        }
+      }
+    };
+
+    updateTimeRemaining();
+    const timer = setInterval(updateTimeRemaining, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, [room.expires_at]);
+
   // Smooth scroll with intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -97,7 +115,7 @@ export default function RoomChat({
           }
         });
       },
-      { threshold: 0.5 },
+      { threshold: 0.5 }
     );
 
     if (messagesEndRef.current) {
@@ -113,7 +131,7 @@ export default function RoomChat({
     setUnreadCount(0);
   };
 
-  // / Accessibility keyboard shortcuts
+  // Accessibility keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.ctrlKey && e.key === "p") {
@@ -142,10 +160,7 @@ export default function RoomChat({
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
+      const { data: { user }, error } = await supabase.auth.getUser();
       if (error) {
         console.error("Error fetching current user:", error);
         return;
@@ -156,13 +171,7 @@ export default function RoomChat({
     const fetchParticipants = async () => {
       const { data, error } = await supabase
         .from("room_participants")
-        .select(
-          `
-          room_id,
-          user_id,
-          joined_at
-        `,
-        )
+        .select(`room_id, user_id, joined_at`)
         .eq("room_id", room.id);
 
       if (error) {
@@ -181,14 +190,7 @@ export default function RoomChat({
     const fetchMessages = async () => {
       const { data, error } = await supabase
         .from("messages")
-        .select(
-          `
-          id,
-          content,
-          created_at,
-          user_id
-        `,
-        )
+        .select(`id, content, created_at, user_id, type`)
         .eq("room_id", room.id)
         .order("created_at", { ascending: true });
 
@@ -207,8 +209,6 @@ export default function RoomChat({
 
     fetchCurrentUser();
     fetchParticipants();
-    console.log(participants);
-
     fetchMessages();
 
     const participantsChannel = supabase
@@ -226,10 +226,10 @@ export default function RoomChat({
             fetchParticipants();
           } else if (payload.eventType === "DELETE") {
             setParticipants((prev) =>
-              prev.filter((p) => p.user_id !== payload.old.user_id),
+              prev.filter((p) => p.user_id !== payload.old.user_id)
             );
           }
-        },
+        }
       )
       .subscribe();
 
@@ -245,7 +245,7 @@ export default function RoomChat({
         },
         (payload) => {
           fetchMessages();
-        },
+        }
       )
       .subscribe();
 
@@ -263,6 +263,7 @@ export default function RoomChat({
       room_id: room.id,
       user_id: currentUser.id,
       content: newMessage,
+      type: 'text'
     });
 
     if (error) {
@@ -299,15 +300,15 @@ export default function RoomChat({
         description: `Left Room Successfully`,
         variant: "default",
       });
+      router.push('/rooms');
     }
   };
 
-  // handleTerminateRoom Function
   const handleTerminateRoom = async () => {
     if (!room) {
       return toast({
         title: "Please select a room",
-        description: "no room selected",
+        description: "No room selected",
       });
     }
     try {
@@ -317,6 +318,7 @@ export default function RoomChat({
           title: "Success",
           description: result.message,
         });
+        router.push('/rooms');
       } else {
         toast({
           title: "Error",
@@ -336,7 +338,7 @@ export default function RoomChat({
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Accessible Sidebar */}
+      {/* Sidebar */}
       <div
         className={`${
           showParticipants ? "w-80" : "w-0"
@@ -347,10 +349,7 @@ export default function RoomChat({
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Participants</h2>
-            <Badge
-              variant="secondary"
-              aria-label={`${participants.length} participants in the room`}
-            >
+            <Badge variant="secondary" aria-label={`${participants.length} participants in the room`}>
               {participants.length}
             </Badge>
           </div>
@@ -375,37 +374,21 @@ export default function RoomChat({
                 <TooltipProvider key={participant.user_id}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div
-                        className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent/50 transition-colors"
-                        role="listitem"
-                      >
+                      <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent/50 transition-colors" role="listitem">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage
-                            src={`https://avatar.vercel.sh/${participant.user_id}`}
-                            alt={`${participant.user_id}'s avatar`}
-                          />
-                          <AvatarFallback>
-                            {participant.user_id.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
+                          <AvatarImage src={`https://avatar.vercel.sh/${participant.user_id}`} alt={`${participant.user_id}'s avatar`} />
+                          <AvatarFallback>{participant.user_id.slice(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
-                            {participant.user_id}
-                          </p>
+                          <p className="font-medium truncate">{participant.user_id}</p>
                           <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(
-                              new Date(participant.joined_at),
-                              { addSuffix: true },
-                            )}
+                            {formatDistanceToNow(new Date(participant.joined_at), { addSuffix: true })}
                           </p>
                         </div>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>
-                        Joined{" "}
-                        {new Date(participant.joined_at).toLocaleDateString()}
-                      </p>
+                      <p>Joined {new Date(participant.joined_at).toLocaleDateString()}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -415,7 +398,7 @@ export default function RoomChat({
         </div>
       </div>
 
-      {/* Main Chat Area with Enhanced UI */}
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col max-w-full">
         <header className="px-6 py-4 border-b border-border bg-card">
           <div className="flex items-center justify-between">
@@ -427,17 +410,9 @@ export default function RoomChat({
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowParticipants(!showParticipants)}
-                      aria-label={
-                        showParticipants
-                          ? "Hide participants"
-                          : "Show participants"
-                      }
+                      aria-label={showParticipants ? "Hide participants" : "Show participants"}
                     >
-                      {showParticipants ? (
-                        <PanelLeftClose className="h-5 w-5" />
-                      ) : (
-                        <PanelLeftOpen className="h-5 w-5" />
-                      )}
+                      {showParticipants ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -448,10 +423,10 @@ export default function RoomChat({
 
               <div>
                 <h1 className="text-xl font-semibold">{room.name}</h1>
-                <p className="text-sm text-muted-foreground">
-                  {participants.length}{" "}
-                  {participants.length === 1 ? "participant" : "participants"}
-                </p>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Users className="h-4 w-4 mr-1" />
+                  {room.participant_count} participants
+                </div>
               </div>
             </div>
 
@@ -462,7 +437,7 @@ export default function RoomChat({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleLeaveRoom()}
+                      onClick={handleLeaveRoom}
                       aria-label="Leave room"
                     >
                       <ArrowLeftFromLine className="h-5 w-5" />
@@ -481,7 +456,7 @@ export default function RoomChat({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleTerminateRoom()}
+                        onClick={handleTerminateRoom}
                         aria-label="Terminate room"
                       >
                         <Trash2 className="h-5 w-5 text-destructive" />
@@ -494,6 +469,10 @@ export default function RoomChat({
                 </TooltipProvider>
               )}
             </div>
+          </div>
+          <div className="mt-2 flex items-center text-sm text-muted-foreground">
+            <Clock className="h-4 w-4 mr-1" />
+            {timeRemaining ? `Expires ${timeRemaining}` : 'No expiration set'}
           </div>
         </header>
 
@@ -509,67 +488,65 @@ export default function RoomChat({
               <p>Failed to load messages</p>
             </div>
           ) : (
-            Object.entries(groupMessagesByDate()).map(
-              ([date, dateMessages]) => (
-                <div key={date} className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <Separator className="flex-1" />
-                    <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded-full">
-                      {date}
-                    </span>
-                    <Separator className="flex-1" />
-                  </div>
-                  {dateMessages.map((message) => (
+            Object.entries(groupMessagesByDate()).map(([date, dateMessages]) => (
+              <div key={date} className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <Separator className="flex-1" />
+                  <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded-full">
+                    {date}
+                  </span>
+                  <Separator className="flex-1" />
+                </div>
+                {dateMessages.map((message: Message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.user_id === currentUser?.id ? "justify-end" : "justify-start"}`}
+                  >
                     <div
-                      key={message.id}
-                      className={`flex ${message.user_id === currentUser?.id ? "justify-end" : "justify-start"}`}
+                      className={`flex items-end space-x-2 max-w-md ${
+                        message.user_id === currentUser?.id
+                          ? "flex-row-reverse space-x-reverse"
+                          : ""
+                      }`}
                     >
+                      {message.user_id !== currentUser?.id && (
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage
+                            src={`https://avatar.vercel.sh/${message.user_id}`}
+                            alt={`${message.user_id}'s avatar`}
+                          />
+                          <AvatarFallback>
+                            {message.user_id.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                       <div
-                        className={`flex items-end space-x-2 max-w-md ${
+                        className={`group relative px-4 py-2 rounded-2xl ${
                           message.user_id === currentUser?.id
-                            ? "flex-row-reverse space-x-reverse"
-                            : ""
+                            ? "bg-primary text-primary-foreground rounded-tr-none"
+                            : "bg-accent rounded-tl-none"
                         }`}
                       >
-                        {message.user_id !== currentUser?.id && (
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage
-                              src={`https://avatar.vercel.sh/${message.user_id}`}
-                              alt={`${message.user_id}'s avatar`}
-                            />
-                            <AvatarFallback>
-                              {message.user_id.slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div
-                          className={`group relative px-4 py-2 rounded-2xl ${
-                            message.user_id === currentUser?.id
-                              ? "bg-primary text-primary-foreground rounded-tr-none"
-                              : "bg-accent rounded-tl-none"
-                          }`}
-                        >
-                          <p className="text-sm whitespace-pre-wrap break-words">
-                            {message.content}
-                          </p>
-                          <p className="text-xs mt-1 opacity-70">
-                            {formatDistanceToNow(new Date(message.created_at), {
-                              addSuffix: true,
-                            })}
-                          </p>
-                        </div>
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {message.content}
+                        </p>
+                        <p className="text-xs mt-1 opacity-70">
+                          {formatDistanceToNow(new Date(message.created_at), {
+                            addSuffix: true,
+                          })}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ),
-            )
+                  </div>
+                ))}
+              </div>
+            ))
           )}
           <div ref={messagesEndRef} />
         </ScrollArea>
 
         {/* Enhanced Message Input */}
-        <div className="p-4 border-t border-border bg-card">
+        <div className="p-4 border-t border-border bg-card ">
           <form
             onSubmit={handleSendMessage}
             className="flex items-center space-x-2"
@@ -579,7 +556,7 @@ export default function RoomChat({
               value={newMessage}
               onChange={handleMessageChange}
               placeholder="Type your message... (Ctrl + J to focus)"
-              className="flex-1"
+              className=" flex-1"
               aria-label="Message input"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -615,3 +592,4 @@ export default function RoomChat({
     </div>
   );
 }
+

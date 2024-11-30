@@ -49,17 +49,20 @@ export default function RoomList({ type, onRoomSelect, selectedRoom }) {
           data: { user },
         } = await supabase.auth.getUser();
         // First, fetch the room_ids the user has joined
-        const { data: participantRooms, error: participantError } = await supabase
-          .from("room_participants")
-          .select("room_id")
-          .eq("user_id", user?.id);
+        const { data: participantRooms, error: participantError } =
+          await supabase
+            .from("room_participants")
+            .select("room_id")
+            .eq("user_id", user?.id);
 
         if (participantError) {
           console.error("Error fetching participant rooms:", participantError);
           return;
         }
 
-        const roomIds = participantRooms.map(participant => participant.room_id);
+        const roomIds = participantRooms.map(
+          (participant) => participant.room_id,
+        );
         // Now filter the rooms based on the room_ids
         query = query.in("id", roomIds);
       }
@@ -90,7 +93,6 @@ export default function RoomList({ type, onRoomSelect, selectedRoom }) {
       supabase.removeChannel(roomsSubscription);
     };
   }, [type, supabase]);
-
 
   const filteredRooms = rooms.filter((room) =>
     room.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -161,7 +163,6 @@ export default function RoomList({ type, onRoomSelect, selectedRoom }) {
         console.log(error);
       } else {
         console.log("User removed from room participants.");
-
       }
     } else {
       console.log("User is not a member of the room.");
@@ -233,34 +234,27 @@ export default function RoomList({ type, onRoomSelect, selectedRoom }) {
                   {new Date(room.created_at).toLocaleDateString()}
                 </span>
               </CardDescription>
-              {
-                type !== "created" && type !== "joined" && (
-                  <Button
-                    className={cn(
-                      "cursor-pointer transition-all hover:shadow-md",
-                      selectedRoom?.id === room.id && "border-primary",
-                    )}
-                    onClick={() => {
-                      onRoomSelect(room);
-                      subscribeToMembers(room.id);
-                    }}
-                  >
-                    Join Room
-                  </Button>
-                )
-              }
-              {type === "created" && (
+              {type !== "created" && type !== "joined" && (
                 <Button
-                  onClick={() => handleTerminateRoom(room)}
-
+                  className={cn(
+                    "cursor-pointer transition-all hover:shadow-md",
+                    selectedRoom?.id === room.id && "border-primary",
+                  )}
+                  onClick={() => {
+                    onRoomSelect(room);
+                    subscribeToMembers(room.id);
+                  }}
                 >
+                  Join Room
+                </Button>
+              )}
+              {type === "created" && (
+                <Button onClick={() => handleTerminateRoom(room)}>
                   Terminate
                 </Button>
               )}
               {type === "joined" && (
-                <Button onClick={() => leaveRoom(room.id)} >
-                  Leave Room
-                </Button>
+                <Button onClick={() => leaveRoom(room.id)}>Leave Room</Button>
               )}
             </CardHeader>
           </Card>

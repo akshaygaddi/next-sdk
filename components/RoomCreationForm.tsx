@@ -55,8 +55,8 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
 
       const expiresAt = data.expiresIn
         ? new Date(
-          Date.now() + parseInt(data.expiresIn) * 60 * 1000,
-        ).toISOString()
+            Date.now() + parseInt(data.expiresIn) * 60 * 1000,
+          ).toISOString()
         : null;
 
       const { data: room, error } = await supabase
