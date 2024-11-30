@@ -24,6 +24,8 @@ const handler = NextAuth({
         });
 
         if (error || !data.user) return null;
+
+        // Return the user with an id and email
         return { id: data.user.id, email: data.user.email };
       },
     }),
@@ -31,13 +33,13 @@ const handler = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.id = user.id; // Add id to the token
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = token.id as string; // Assign token id to session user id
       }
       return session;
     },
