@@ -15,6 +15,8 @@ export default function RoomSidebar({
   isMobile,
   onClose,
 }) {
+  console.log(selectedRoom);
+
   return (
     <div
       className={cn("flex h-full flex-col bg-card border-r border", className)}

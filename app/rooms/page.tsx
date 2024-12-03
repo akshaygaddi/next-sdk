@@ -37,6 +37,28 @@ export default function RoomsPage() {
             sidebarOpen ? "w-80" : "w-0"
           } border-r bg-card transition-all duration-300 ease-in-out overflow-hidden`}
         >
+          {isDesktop ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="hover:bg-muted"
+            >
+              {sidebarOpen ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+              <span className="sr-only">
+                  {sidebarOpen ? "Close sidebar" : "Open sidebar"}
+                </span>
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+              <Menu className="h-4 w-4" />
+              <span className="sr-only">Toggle menu</span>
+            </Button>
+          )}
           <div className="h-full">
             <RoomSidebar
               selectedRoom={selectedRoom}
@@ -66,6 +88,7 @@ export default function RoomsPage() {
         </Sheet>
       )}
 
+      {/*2222*/}
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header with Toggle */}
@@ -94,7 +117,7 @@ export default function RoomsPage() {
               </Button>
             )}
             <h1 className="font-semibold">
-              {selectedRoom ? selectedRoom.name : "Chat Rooms"}
+              {selectedRoom ? selectedRoom.name : "Chat Rooms okay"}
             </h1>
           </div>
         </div>

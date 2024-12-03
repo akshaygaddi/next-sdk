@@ -28,7 +28,7 @@ const Navbar = async () => {
               <Link
                 key={index}
                 href={`/${item.toLowerCase().replace(" ", "")}`}
-                className="p-2 text-neutral-dark dark:text-neutral-light hover:bg-neutral-light/70 dark:hover:bg-neutral-dark rounded-md transition"
+                className="p-2 text-neutral-dark dark:text-white hover:bg-neutral-light/70 dark:hover:bg-neutral-dark  rounded-md transition"
                 aria-label={`Go to ${item}`}
               >
                 {item}
@@ -66,19 +66,15 @@ const Navbar = async () => {
               </div>
             ) : (
               <div className="hidden md:flex items-center space-x-4">
-                <Link
-                  href="/auth/login"
-                  className="flex items-center text-primary border border-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition-all"
-                  aria-label="Login"
-                >
-                  Login
+                <Link href="/auth/login" aria-label="Login">
+                  <Button variant="outline" className="px-4 py-2">
+                    Login
+                  </Button>
                 </Link>
-                <Link
-                  href="/auth/signup"
-                  className="flex items-center bg-primary text-white px-4 py-2 rounded-lg hover:bg-accent transition-all"
-                  aria-label="Sign Up"
-                >
-                  Sign Up
+                <Link href="/auth/signup" aria-label="Sign Up">
+                  <Button variant="default" className="px-4 py-2">
+                    Sign Up
+                  </Button>
                 </Link>
               </div>
             )}
@@ -107,7 +103,7 @@ const Navbar = async () => {
             <Link
               key={index}
               href={`/${item.toLowerCase().replace(" ", "")}`}
-              className="block text-neutral-dark dark:text-neutral-light px-4 py-2 rounded-md hover:bg-neutral-light/70 dark:hover:bg-neutral-dark transition"
+              className="block text-neutral-dark dark:text-neutral-light px-4 py-2 rounded-md hover:red-500 dark:hover:bg-neutral-dark transition"
               aria-label={`Go to ${item}`}
             >
               {item}

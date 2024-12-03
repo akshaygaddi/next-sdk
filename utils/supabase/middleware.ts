@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
       // console.error("Error fetching user maybe user is not logged in:", error.message);
     }
 
-    const isAuthPage = ["/auth/login", "/auth/signup"].some((path) =>
+    const isAuthPage = ["/auth/login", "/auth/signup", "/error"].some((path) =>
       request.nextUrl.pathname.startsWith(path),
     );
     const isProtectedPage =
@@ -57,6 +57,7 @@ export async function updateSession(request: NextRequest) {
       // loginUrl.pathname = "/auth/signup";
 
       loginUrl.searchParams.set("redirect", request.nextUrl.pathname); // Preserve original path
+
       return NextResponse.redirect(loginUrl);
     }
 
