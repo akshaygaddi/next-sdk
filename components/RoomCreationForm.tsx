@@ -1,16 +1,11 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "motion/react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import React, { useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { motion } from "motion/react";
 import {
-  Loader2,
-  Lock,
-  Globe,
   Clock,
+  Globe,
+  Lock,
+  Loader2,
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
@@ -18,53 +13,103 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { createClient } from "@/utils/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "@/hooks/use-toast";
 
-const formSchema = z.object({
-  name: z.string().min(3, "Room name must be at least 3 characters"),
-  type: z.enum(["public", "private"]),
-  password: z.string().optional(),
-  expiresIn: z.string().optional(),
-});
+const FORM_STEPS = [
+  {
+    id: "name",
+    title: "Room Name",
+    description: "Choose a memorable name for your chat room",
+  },
+  {
+    id: "type",
+    title: "Room Privacy",
+    description: "Choose who can access your room",
+  },
+  {
+    id: "duration",
+    title: "Room Duration",
+    description: "Set how long the room should remain active",
+  },
+];
 
 export default function RoomCreationForm({ onRoomCreated, onClose }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "public",
+    password: "",
+    expiresIn: "",
+  });
+  const [errors, setErrors] = useState({});
+
   const supabase = createClient();
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      type: "public",
-      password: "",
-      expiresIn: "",
-    },
-  });
+  const validateStep = (stepIndex) => {
+    const newErrors = {};
+    switch (stepIndex) {
+      case 0:
+        if (!formData.name.trim()) {
+          newErrors.name = "Room name is required";
+        } else if (formData.name.length < 3) {
+          newErrors.name = "Room name must be at least 3 characters";
+        }
+        break;
+      case 1:
+        if (formData.type === "private" && !formData.password) {
+          newErrors.password = "Password is required for private rooms";
+        }
+        break;
+      case 2:
+        if (formData.expiresIn && (isNaN(formData.expiresIn) || formData.expiresIn < 0)) {
+          newErrors.expiresIn = "Please enter a valid duration";
+        }
+        break;
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-  const onSubmit = async (data) => {
+  const handleNext = (e) => {
+    e?.preventDefault();
+    if (validateStep(step)) {
+      setStep((prev) => Math.min(prev + 1, FORM_STEPS.length - 1));
+    }
+  };
+
+  const handleBack = () => {
+    setStep((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // If not on the last step, just go to next step
+    if (step < FORM_STEPS.length - 1) {
+      handleNext(e);
+      return;
+    }
+
+    // On last step, validate before submitting
+    if (!validateStep(step)) return;
+
     setIsSubmitting(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      const expiresAt = data.expiresIn
-        ? new Date(
-            Date.now() + parseInt(data.expiresIn) * 60 * 1000,
-          ).toISOString()
+      const expiresAt = formData.expiresIn
+        ? new Date(Date.now() + parseInt(formData.expiresIn) * 60 * 1000).toISOString()
         : null;
 
       const { data: room, error } = await supabase
         .from("rooms")
         .insert({
-          name: data.name,
-          type: data.type,
-          password: data.type === "private" ? data.password : null,
+          name: formData.name,
+          type: formData.type,
+          password: formData.type === "private" ? formData.password : null,
           created_by: user.id,
           expires_at: expiresAt,
         })
@@ -73,18 +118,22 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
 
       if (error) throw error;
 
+      // Auto-join creator to the room
+      await supabase
+        .from("room_participants")
+        .insert({ room_id: room.id, user_id: user.id });
+
       toast({
         title: "Success!",
-        description: "Your room has been created.",
+        description: "Room created successfully.",
       });
 
       onRoomCreated?.(room);
       onClose?.();
     } catch (error) {
-      console.error("Error creating room:", error);
       toast({
         title: "Error",
-        description: "Failed to create room. Please try again.",
+        description: error.message || "Failed to create room",
         variant: "destructive",
       });
     } finally {
@@ -92,86 +141,60 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
     }
   };
 
-  const nextStep = () => {
-    if (step === 1 && !form.getValues("name")) {
-      form.setError("name", { message: "Room name is required" });
-      return;
-    }
-    setStep((prev) => prev + 1);
-  };
+  const progress = ((step + 1) / FORM_STEPS.length) * 100;
 
-  const prevStep = () => setStep((prev) => prev - 1);
-
-  const progress = (step / 3) * 100;
-
-  return (
-    <div className="space-y-6">
-      <Progress value={progress} className="h-2" />
-
-      <AnimatePresence mode="wait">
-        {step === 1 && (
+  const renderStepContent = () => {
+    switch (step) {
+      case 0:
+        return (
           <motion.div
-            key="step1"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-4 bg-card p-6 rounded-lg border shadow-sm"
+            className="space-y-4"
           >
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Name your room</h3>
-              <p className="text-sm text-muted-foreground">
-                Choose a memorable name for your chat room
-              </p>
-            </div>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Room Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Enter room name..."
-                  {...form.register("name")}
-                  className="transition-all"
-                />
-                {form.formState.errors.name && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.name.message}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={nextStep}>
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+              <Label htmlFor="name">Room Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleNext(e);
+                  }
+                }}
+                placeholder="Enter room name..."
+                error={errors.name}
+                autoFocus
+              />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name}</p>
+              )}
             </div>
           </motion.div>
-        )}
+        );
 
-        {step === 2 && (
+      case 1:
+        return (
           <motion.div
-            key="step2"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-4 bg-card p-6 rounded-lg border shadow-sm"
+            className="space-y-4"
           >
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Room Privacy</h3>
-              <p className="text-sm text-muted-foreground">
-                Choose who can access your room
-              </p>
-            </div>
             <RadioGroup
-              defaultValue={form.getValues("type")}
-              onValueChange={(value) => form.setValue("type", value)}
-              className="space-y-4"
+              value={formData.type}
+              onValueChange={(value) =>
+                setFormData({ ...formData, type: value })
+              }
+              className="space-y-3"
             >
               <div className="flex items-center space-x-4 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors">
                 <RadioGroupItem value="public" id="public" />
-                <div className="flex-1">
+                <div>
                   <Label htmlFor="public" className="text-base font-medium">
                     <Globe className="h-4 w-4 inline mr-2" />
                     Public Room
@@ -183,7 +206,7 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
               </div>
               <div className="flex items-center space-x-4 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors">
                 <RadioGroupItem value="private" id="private" />
-                <div className="flex-1">
+                <div>
                   <Label htmlFor="private" className="text-base font-medium">
                     <Lock className="h-4 w-4 inline mr-2" />
                     Private Room
@@ -195,84 +218,126 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
               </div>
             </RadioGroup>
 
-            {form.watch("type") === "private" && (
+            {formData.type === "private" && (
               <div className="space-y-2">
                 <Label htmlFor="password">Room Password</Label>
                 <Input
                   id="password"
                   type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleNext(e);
+                    }
+                  }}
                   placeholder="Enter password..."
-                  {...form.register("password")}
+                  error={errors.password}
                 />
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password}</p>
+                )}
               </div>
             )}
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={prevStep}>
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <Button onClick={nextStep}>
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
           </motion.div>
-        )}
+        );
 
-        {step === 3 && (
+      case 2:
+        return (
           <motion.div
-            key="step3"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-4 bg-card p-6 rounded-lg border shadow-sm"
+            className="space-y-4"
           >
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Room Duration</h3>
+              <Label htmlFor="expiresIn">
+                <Clock className="h-4 w-4 inline mr-2" />
+                Duration (minutes)
+              </Label>
+              <Input
+                id="expiresIn"
+                type="number"
+                value={formData.expiresIn}
+                onChange={(e) =>
+                  setFormData({ ...formData, expiresIn: e.target.value })
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+                placeholder="Leave empty for no expiration"
+                error={errors.expiresIn}
+              />
+              {errors.expiresIn && (
+                <p className="text-sm text-destructive">{errors.expiresIn}</p>
+              )}
               <p className="text-sm text-muted-foreground">
-                Set how long the room should remain active
+                Optional: Set a time limit for your room
               </p>
             </div>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="expiresIn">
-                  <Clock className="h-4 w-4 inline mr-2" />
-                  Expires in (minutes)
-                </Label>
-                <Input
-                  id="expiresIn"
-                  type="number"
-                  placeholder="Leave empty for no expiration"
-                  {...form.register("expiresIn")}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Optional: Set a time limit for your room
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={prevStep}>
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <Button
-                onClick={form.handleSubmit(onSubmit)}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Room"
-                )}
-              </Button>
-            </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        );
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Progress value={progress} className="h-1" />
+
+      <div className="space-y-2 mb-6">
+        <h3 className="text-lg font-semibold">
+          {FORM_STEPS[step].title}
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          {FORM_STEPS[step].description}
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {renderStepContent()}
+
+        <div className="flex justify-between pt-4 border-t">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleBack}
+            disabled={step === 0 || isSubmitting}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+
+          {step < FORM_STEPS.length - 1 ? (
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              Next
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              className="min-w-[100px]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Room"
+              )}
+            </Button>
+          )}
+        </div>
+      </form>
     </div>
   );
 }
