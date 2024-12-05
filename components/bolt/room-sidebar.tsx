@@ -7,39 +7,43 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from "@/components/ui/label";
 import {
-  Users, Search, Plus, Globe, Lock,
-  Timer, Trash2, LogOut, Crown, Hourglass
+  Users, Search, Plus, Globe, Lock,Copy,Eye,EyeOff,
+  Timer, Trash2, LogOut, Crown, Hourglass, Loader2
 } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
 import RoomCreationForm from '@/components/RoomCreationForm';
 
 // Join Private Room Dialog Component
+
+
 const JoinPrivateRoom = ({ onJoinPrivate }) => {
-  const [roomId, setRoomId] = useState('');
-  const [password, setPassword] = useState('');
+  const [roomCode, setRoomCode] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleJoin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!roomId || !password) return;
+    if (!roomCode || !password) return;
     setIsLoading(true);
 
     try {
       const supabase = createClient();
       const { data: room, error: roomError } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('id', roomId)
-        .eq('type', 'private')
+        .from("rooms")
+        .select("*")
+        .eq("room_code", roomCode)
+        .eq("type", "private")
+        .eq("is_active", true)
         .single();
 
-      if (roomError || !room) throw new Error('Room not found');
-      if (room.password !== password) throw new Error('Invalid password');
+      if (roomError || !room) throw new Error("Room not found");
+      if (room.password !== password) throw new Error("Invalid password");
 
       await onJoinPrivate(room);
-      setRoomId('');
-      setPassword('');
+      setRoomCode("");
+      setPassword("");
     } catch (error) {
       toast({
         title: "Error",
@@ -52,33 +56,54 @@ const JoinPrivateRoom = ({ onJoinPrivate }) => {
   };
 
   return (
-    <form onSubmit={handleJoin} className="space-y-4 p-4">
-      <Input
-        placeholder="Room ID"
-        value={roomId}
-        onChange={(e) => setRoomId(e.target.value)}
-        required
-      />
-      <Input
-        type="password"
-        placeholder="Room Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
+    <form onSubmit={handleSubmit} className="space-y-4 p-4">
+      <div className="space-y-2">
+        <Label htmlFor="roomCode">Room Code</Label>
+        <Input
+          id="roomCode"
+          placeholder="Enter 6-digit room code"
+          value={roomCode}
+          onChange={(e) => {
+            const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+            setRoomCode(value);
+          }}
+          maxLength={6}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          type="password"
+          placeholder="Enter room password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </div>
+
       <Button
         type="submit"
         className="w-full"
-        disabled={isLoading}
+        disabled={isLoading || roomCode.length !== 6 || !password}
       >
-        {isLoading ? 'Joining...' : 'Join Private Room'}
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Joining...
+          </>
+        ) : (
+          "Join Private Room"
+        )}
       </Button>
     </form>
   );
 };
 
 // Room Card Component
-const RoomCard = ({
+export const RoomCard = ({
                     room,
                     onSelect,
                     onJoin,
@@ -89,9 +114,25 @@ const RoomCard = ({
                     isMobile,
                     onClose
                   }) => {
-  const isExpiring = room.expires_at && new Date(room.expires_at).getTime() - Date.now() < 60 * 1000;
-
+  const [showPassword, setShowPassword] = useState(false);
+  const isExpiring = room.expires_at && new Date(room.expires_at).getTime() - Date.now() < 24 * 60 * 60 * 1000;
   const isCreator = room.created_by === currentUserId;
+
+  const handleCopyRoomCode = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(room.room_code);
+    toast({
+      description: "Room code copied to clipboard",
+    });
+  };
+
+  const handleCopyPassword = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(room.password);
+    toast({
+      description: "Password copied to clipboard",
+    });
+  };
 
   return (
     <div
@@ -101,89 +142,143 @@ const RoomCard = ({
       }}
       className="group p-4 rounded-lg border border-border/50 hover:border-primary/20 transition-all duration-200 cursor-pointer bg-card/30 hover:bg-card/50"
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {room.type === 'private' ? (
-            <Lock className="h-4 w-4 text-destructive/70" />
-          ) : (
-            <Globe className="h-4 w-4 text-primary/60" />
-          )}
-          <span className="font-medium text-sm">{room.name}</span>
-        </div>
-        <div className="flex gap-1">
-          {isCreator && (
-            <Badge variant="outline" className="bg-primary/10 text-primary text-xs">
-              <Crown className="h-3 w-3 mr-1" />
-              You
-            </Badge>
-          )}
-          {/* Private indicator replaced with colored lock icon */}
-          {hasJoined && (
-            <Badge variant="outline" className="bg-success/10 text-success text-xs">
-              Joined
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between mt-2">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center text-xs text-muted-foreground">
-            <Users className="h-3 w-3 mr-1" />
-            {room.participant_count || 0}
-          </span>
-          {isExpiring && (
-              <Hourglass className="h-3 w-3 mr-1" />
-          )}
+      <div className="space-y-3">
+        {/* Header with room name and badges */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {room.type === 'private' ? (
+              <Lock className="h-4 w-4 text-destructive/70" />
+            ) : (
+              <Globe className="h-4 w-4 text-primary/60" />
+            )}
+            <span className="font-medium text-sm">{room.name}</span>
+          </div>
+          <div className="flex gap-1">
+            {isCreator && (
+              <Badge variant="outline" className="bg-primary/10 text-primary text-xs">
+                <Crown className="h-3 w-3 mr-1" />
+                Created
+              </Badge>
+            )}
+          </div>
         </div>
 
-        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          {hasJoined && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 px-2 hover:bg-destructive/10 hover:text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                onLeave(room.id);
-              }}
-            >
-              <LogOut className="h-3 w-3 mr-1" />
-              Leave
-            </Button>
+        {/* Room details section */}
+        <div className="space-y-2">
+          {/* Show room code and password for private rooms */}
+          {room.type === 'private' && (hasJoined || isCreator) && (
+            <div className="text-xs space-y-2 bg-muted/50 rounded-md p-2">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Room ID: {room.room_code}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 hover:bg-background"
+                  onClick={handleCopyRoomCode}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">
+                    Password: {showPassword ? room.password : '••••••'}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 hover:bg-background"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowPassword(!showPassword);
+                    }}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-3 w-3" />
+                    ) : (
+                      <Eye className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 hover:bg-background"
+                  onClick={handleCopyPassword}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
           )}
-          {isCreator && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 px-2 hover:bg-destructive/10 hover:text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                onTerminate(room);
-              }}
-            >
-              <Trash2 className="h-3 w-3 mr-1" />
-              Terminate
-            </Button>
-          )}
-          {!hasJoined && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 px-3"
-              onClick={(e) => {
-                e.stopPropagation();
-                onJoin(room);
-              }}
-            >
-              Join
-            </Button>
-          )}
+
+          {/* Room stats and actions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center text-xs text-muted-foreground">
+                <Users className="h-3 w-3 mr-1" />
+                {room.participant_count || 0}
+              </span>
+              {isExpiring && (
+
+                  <Timer className="h-3 w-3 mr-1" />
+
+              )}
+            </div>
+
+            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              {hasJoined && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-2 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLeave(room.id);
+                  }}
+                >
+                  <LogOut className="h-3 w-3 mr-1" />
+                  Leave
+                </Button>
+              )}
+              {isCreator && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-2 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTerminate(room);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Terminate
+                </Button>
+              )}
+              {!hasJoined && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-3"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onJoin(room);
+                  }}
+                >
+                  Join
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+
+
 
 export function CreateRoomDialog({ onRoomCreated }) {
   const [open, setOpen] = useState(false);
@@ -243,7 +338,7 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
           setJoinedRooms(participantRooms.map(p => p.room_id));
         }
 
-        // Fetch all rooms
+        // Fetch all active rooms initially
         const { data: roomsData, error: roomsError } = await supabase
           .from('rooms')
           .select('*, room_participants(user_id)')
@@ -365,22 +460,35 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
     }
   };
 
-  const filteredRooms = rooms.filter(room =>
-    room.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter rooms based on search and visibility rules
+  const filteredRooms = rooms
+    .filter(room => {
+      const isVisible =
+        room.type === 'public' || // Show all public rooms
+        room.created_by === currentUserId || // Show private rooms created by user
+        joinedRooms.includes(room.id); // Show private rooms user has joined
 
-
+      return room.name.toLowerCase().includes(searchQuery.toLowerCase()) && isVisible;
+    });
 
   return (
     <div className="h-full flex flex-col bg-background/95 backdrop-blur">
       <div className="p-4 space-y-4">
         <div className="flex gap-2">
-          <CreateRoomDialog onRoomCreated={(room) => {
-            onRoomSelect(room);
-            // Optionally refresh rooms list or add the new room to existing list
-            setRooms(prevRooms => [...prevRooms, room]);
-            setJoinedRooms(prev => [...prev, room.id]);
-          }} />
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="flex-1 bg-primary">
+                <Plus className="mr-2 h-4 w-4" /> New Room
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Room</DialogTitle>
+                <DialogDescription>Create a new chat room and invite others</DialogDescription>
+              </DialogHeader>
+              <RoomCreationForm onRoomCreated={onRoomSelect} />
+            </DialogContent>
+          </Dialog>
 
           <Dialog>
             <DialogTrigger asChild>
@@ -391,7 +499,7 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Join Private Room</DialogTitle>
-                <DialogDescription>Enter room ID and password to join</DialogDescription>
+                <DialogDescription>Enter room code and password to join</DialogDescription>
               </DialogHeader>
               <JoinPrivateRoom onJoinPrivate={handleJoinRoom} />
             </DialogContent>
@@ -448,26 +556,35 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
           </TabsContent>
 
           <TabsContent value="joined" className="space-y-2 mt-2">
-            {filteredRooms
+            {loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-24 animate-pulse bg-muted rounded-lg" />
+                ))}
+              </div>
+            ) : filteredRooms
               .filter(room => joinedRooms.includes(room.id))
-              .map(room => (
-                <RoomCard
-                  key={room.id}
-                  room={room}
-                  onSelect={onRoomSelect}
-                  onJoin={handleJoinRoom}
-                  onLeave={handleLeaveRoom}
-                  onTerminate={handleTerminateRoom}
-                  currentUserId={currentUserId}
-                  hasJoined={joinedRooms.includes(room.id)}
-                  isMobile={isMobile}
-                  onClose={onClose}
-                />
-              ))}
-            {filteredRooms.filter(room => joinedRooms.includes(room.id)).length === 0 && (
+              .length > 0 ? (
+              filteredRooms
+                .filter(room => joinedRooms.includes(room.id))
+                .map(room => (
+                  <RoomCard
+                    key={room.id}
+                    room={room}
+                    onSelect={onRoomSelect}
+                    onJoin={handleJoinRoom}
+                    onLeave={handleLeaveRoom}
+                    onTerminate={handleTerminateRoom}
+                    currentUserId={currentUserId}
+                    hasJoined={true}
+                    isMobile={isMobile}
+                    onClose={onClose}
+                  />
+                ))
+            ) : (
               <Alert>
                 <AlertDescription>
-                  You haven't joined any rooms yet. Join a room from the All Rooms tab.
+                  You haven't joined any rooms yet.
                 </AlertDescription>
               </Alert>
             )}
@@ -477,5 +594,6 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
     </div>
   );
 };
+
 
 export default React.memo(RoomSidebar);
