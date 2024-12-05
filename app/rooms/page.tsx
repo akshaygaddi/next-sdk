@@ -1,32 +1,31 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Menu } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet"
-import RoomChat from "@/components/RoomChat"
-import { useMediaQuery } from "@/hooks/bolt/use-media-query"
-import WelcomeScreen from "@/components/bolt/welcome-screen"
-import RoomSidebar from "@/components/bolt/room-sidebar"
+} from "@/components/ui/sheet";
+import RoomChat from "@/components/RoomChat";
+import  useMediaQuery  from "@/hooks/use-media-query";
+import RoomSidebar from "@/components/bolt/room-sidebar";
+import WelcomeScreen from "@/components/bolt/welcome-screen";
+
 
 export default function RoomsPage() {
-  const [selectedRoom, setSelectedRoom] = useState(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const isDesktop = useMediaQuery("(min-width: 1024px)")
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   useEffect(() => {
-    setSidebarOpen(isDesktop)
-  }, [isDesktop])
+    setSidebarOpen(isDesktop);
+  }, [isDesktop]);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
-  }
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   return (
     <div className="flex h-screen bg-background">
@@ -37,34 +36,12 @@ export default function RoomsPage() {
             sidebarOpen ? "w-80" : "w-0"
           } border-r bg-card transition-all duration-300 ease-in-out overflow-hidden`}
         >
-          {isDesktop ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className="hover:bg-muted"
-            >
-              {sidebarOpen ? (
-                <ChevronLeft className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-              <span className="sr-only">
-                  {sidebarOpen ? "Close sidebar" : "Open sidebar"}
-                </span>
-            </Button>
-          ) : (
-            <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-              <Menu className="h-4 w-4" />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
-          )}
           <div className="h-full">
             <RoomSidebar
               selectedRoom={selectedRoom}
               onRoomSelect={setSelectedRoom}
-              sidebarOpen={sidebarOpen}
-              onToggleSidebar={toggleSidebar}
+              isMobile={false}
+              onClose={() => setSidebarOpen(false)}
             />
           </div>
         </div>
@@ -77,21 +54,22 @@ export default function RoomsPage() {
             <SheetHeader>
               <SheetTitle className="sr-only">Chat Rooms</SheetTitle>
               <SheetDescription className="sr-only">
-                Select and view your chat rooms
+                Browse and join chat rooms
               </SheetDescription>
             </SheetHeader>
             <RoomSidebar
               selectedRoom={selectedRoom}
               onRoomSelect={setSelectedRoom}
+              isMobile={true}
+              onClose={() => setSidebarOpen(false)}
             />
           </SheetContent>
         </Sheet>
       )}
 
-      {/*2222*/}
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header with Toggle */}
+        {/* Header */}
         <div className="h-14 border-b flex items-center px-4 justify-between bg-card">
           <div className="flex items-center gap-2">
             {isDesktop ? (
@@ -117,7 +95,7 @@ export default function RoomsPage() {
               </Button>
             )}
             <h1 className="font-semibold">
-              {selectedRoom ? selectedRoom.name : "Chat Rooms okay"}
+              {selectedRoom ? selectedRoom.name : "Chat Rooms"}
             </h1>
           </div>
         </div>
@@ -125,13 +103,12 @@ export default function RoomsPage() {
         {/* Chat Area */}
         <div className="flex-1">
           {selectedRoom ? (
-            <RoomChat room={selectedRoom} selectedRoom={selectedRoom} />
+            <RoomChat room={selectedRoom} />
           ) : (
             <WelcomeScreen />
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }
-

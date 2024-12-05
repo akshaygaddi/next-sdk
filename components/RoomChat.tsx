@@ -9,7 +9,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Search, Send, Users, ArrowLeftFromLine, Trash2, PanelLeftClose, PanelLeftOpen, Loader2, AlertCircle, Eye, EyeOff, Clock } from 'lucide-react';
+import {
+  Send,
+  Users,
+  ArrowLeftFromLine,
+  Trash2,
+  Eye,
+  EyeOff,
+  Clock,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { formatDistanceToNow, formatDistance } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -20,39 +30,21 @@ import {
 } from "@/components/ui/tooltip";
 import { terminateRoom } from "@/utils/room/commonLogic";
 
-interface Room {
-  id: string;
-  name: string;
-  type: 'public' | 'private';
-  created_by: string;
-  expires_at: string;
-  is_active: boolean;
-  private_room_id: string | null;
-  participant_count: number;
-}
-
-interface Participant {
-  room_id: string;
-  user_id: string;
-  joined_at: string;
-}
-
-interface Message {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  type: string;
-}
-
 interface RoomChatProps {
-  room: Room;
-  initialParticipant: Participant;
+  room: {
+    id: string;
+    name: string;
+    type: string;
+    created_by: string;
+    expires_at: string | null;
+    is_active: boolean;
+    participant_count: number;
+  };
 }
 
-export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatProps) {
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
+export default function RoomChat({ room }: RoomChatProps) {
+  const [participants, setParticipants] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [showParticipants, setShowParticipants] = useState(true);
@@ -69,12 +61,12 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
   const messageInputRef = useRef(null);
   const scrollAreaRef = useRef(null);
 
-  // Enhanced filtering with fuzzy search
+  // Filter participants with search
   const filteredParticipants = participants.filter((participant) =>
     participant.user_id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Improved message grouping with time-based clustering
+  // Group messages by date
   const groupMessagesByDate = () => {
     const groups = {};
     messages.forEach((message) => {
@@ -100,12 +92,11 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
     };
 
     updateTimeRemaining();
-    const timer = setInterval(updateTimeRemaining, 60000); // Update every minute
-
+    const timer = setInterval(updateTimeRemaining, 60000);
     return () => clearInterval(timer);
   }, [room.expires_at]);
 
-  // Smooth scroll with intersection observer
+  // Scroll with intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -125,13 +116,12 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
     return () => observer.disconnect();
   }, [messages]);
 
-  // Enhanced scroll behavior
   const scrollToBottom = (behavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
     setUnreadCount(0);
   };
 
-  // Accessibility keyboard shortcuts
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.ctrlKey && e.key === "p") {
@@ -153,65 +143,52 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
     setNewMessage(e.target.value);
     if (!isTyping) {
       setIsTyping(true);
-      // Implement typing indicator logic here
       setTimeout(() => setIsTyping(false), 1000);
     }
   };
 
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error("Error fetching current user:", error);
-        return;
-      }
-      setCurrentUser(user);
-    };
+    const fetchInitialData = async () => {
+      try {
+        // Fetch current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        setCurrentUser(user);
 
-    const fetchParticipants = async () => {
-      const { data, error } = await supabase
-        .from("room_participants")
-        .select(`room_id, user_id, joined_at`)
-        .eq("room_id", room.id);
+        // Fetch participants
+        const { data: participantsData, error: participantsError } = await supabase
+          .from("room_participants")
+          .select("*")
+          .eq("room_id", room.id);
+        if (participantsError) throw participantsError;
+        setParticipants(participantsData);
 
-      if (error) {
-        console.error("Error fetching participants:", error);
+        // Fetch messages
+        const { data: messagesData, error: messagesError } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("room_id", room.id)
+          .order("created_at", { ascending: true });
+        if (messagesError) throw messagesError;
+        setMessages(messagesData);
+
+        setIsLoading(false);
+        scrollToBottom("auto");
+      } catch (error) {
+        setError(error.message);
+        setIsLoading(false);
         toast({
           title: "Error",
-          description: `Failed to fetch participants: ${error.message}`,
+          description: "Failed to load chat data",
           variant: "destructive",
         });
-        return;
       }
-      setIsLoading(false);
-      setParticipants(data as Participant[]);
     };
 
-    const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from("messages")
-        .select(`id, content, created_at, user_id, type`)
-        .eq("room_id", room.id)
-        .order("created_at", { ascending: true });
+    fetchInitialData();
 
-      if (error) {
-        console.error("Error fetching messages:", error);
-        toast({
-          title: "Error",
-          description: `Failed to fetch messages: ${error.message}`,
-          variant: "destructive",
-        });
-        return;
-      }
-      setMessages(data as Message[]);
-      scrollToBottom();
-    };
-
-    fetchCurrentUser();
-    fetchParticipants();
-    fetchMessages();
-
-    const participantsChannel = supabase
+    // Set up realtime subscriptions
+    const participantsSubscription = supabase
       .channel("room_participants")
       .on(
         "postgres_changes",
@@ -223,7 +200,7 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
         },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            fetchParticipants();
+            setParticipants((prev) => [...prev, payload.new]);
           } else if (payload.eventType === "DELETE") {
             setParticipants((prev) =>
               prev.filter((p) => p.user_id !== payload.old.user_id)
@@ -233,7 +210,7 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
       )
       .subscribe();
 
-    const messagesChannel = supabase
+    const messagesSubscription = supabase
       .channel("room_messages")
       .on(
         "postgres_changes",
@@ -244,73 +221,68 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
           filter: `room_id=eq.${room.id}`,
         },
         (payload) => {
-          fetchMessages();
+          setMessages((prev) => [...prev, payload.new]);
+          scrollToBottom();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(participantsChannel);
-      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(participantsSubscription);
+      supabase.removeChannel(messagesSubscription);
     };
   }, [supabase, room.id]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !currentUser) return;
 
-    const { error } = await supabase.from("messages").insert({
-      room_id: room.id,
-      user_id: currentUser.id,
-      content: newMessage,
-      type: 'text'
-    });
+    try {
+      const { error } = await supabase.from("messages").insert({
+        room_id: room.id,
+        user_id: currentUser.id,
+        content: newMessage,
+        type: "text",
+      });
 
-    if (error) {
-      console.error("Error sending message:", error);
+      if (error) throw error;
+      setNewMessage("");
+    } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to send message: ${error.message}`,
+        description: "Failed to send message",
         variant: "destructive",
       });
-    } else {
-      setNewMessage("");
     }
   };
 
   const handleLeaveRoom = async () => {
     if (!currentUser) return;
 
-    const { error } = await supabase
-      .from("room_participants")
-      .delete()
-      .eq("room_id", room.id)
-      .eq("user_id", currentUser.id);
+    try {
+      const { error } = await supabase
+        .from("room_participants")
+        .delete()
+        .eq("room_id", room.id)
+        .eq("user_id", currentUser.id);
 
-    if (error) {
-      console.error("Error leaving room:", error);
-      toast({
-        title: "Error",
-        description: `Failed to leave the room: ${error.message}`,
-        variant: "destructive",
-      });
-    } else {
+      if (error) throw error;
+
       toast({
         title: "Success",
-        description: `Left Room Successfully`,
-        variant: "default",
+        description: "Left room successfully",
       });
-      router.push('/rooms');
+      router.push("/rooms");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to leave room",
+        variant: "destructive",
+      });
     }
   };
 
   const handleTerminateRoom = async () => {
-    if (!room) {
-      return toast({
-        title: "Please select a room",
-        description: "No room selected",
-      });
-    }
     try {
       const result = await terminateRoom(room.created_by, room.id);
       if (result.success) {
@@ -318,7 +290,7 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
           title: "Success",
           description: result.message,
         });
-        router.push('/rooms');
+        router.push("/rooms");
       } else {
         toast({
           title: "Error",
@@ -327,7 +299,6 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
         });
       }
     } catch (error) {
-      console.error("Error in handleTerminateRoom:", error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -338,57 +309,62 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
+      {/* Participants Sidebar */}
       <div
         className={`${
           showParticipants ? "w-80" : "w-0"
         } transition-all duration-300 overflow-hidden border-r border-border bg-card`}
-        role="complementary"
-        aria-label="Participants panel"
       >
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Participants</h2>
-            <Badge variant="secondary" aria-label={`${participants.length} participants in the room`}>
+            <Badge variant="secondary">
               {participants.length}
             </Badge>
           </div>
 
-          {/* Enhanced Search with Accessibility */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               className="pl-10 bg-background"
               placeholder="Search participants..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Search participants"
-              role="searchbox"
             />
           </div>
 
-          {/* Participant List with Virtual Scrolling */}
           <ScrollArea className="h-[calc(100vh-12rem)]">
             <div className="space-y-2">
               {filteredParticipants.map((participant) => (
                 <TooltipProvider key={participant.user_id}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent/50 transition-colors" role="listitem">
+                      <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent/50 transition-colors">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={`https://avatar.vercel.sh/${participant.user_id}`} alt={`${participant.user_id}'s avatar`} />
-                          <AvatarFallback>{participant.user_id.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          <AvatarImage
+                            src={`https://avatar.vercel.sh/${participant.user_id}`}
+                            alt={`${participant.user_id}'s avatar`}
+                          />
+                          <AvatarFallback>
+                            {participant.user_id.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{participant.user_id}</p>
+                          <p className="font-medium truncate">
+                            {participant.user_id}
+                          </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(participant.joined_at), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(participant.joined_at), {
+                              addSuffix: true,
+                            })}
                           </p>
                         </div>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Joined {new Date(participant.joined_at).toLocaleDateString()}</p>
+                      <p>
+                        Joined {new Date(participant.joined_at).toLocaleDateString()}
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -400,6 +376,7 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col max-w-full">
+        {/* Chat Header */}
         <header className="px-6 py-4 border-b border-border bg-card">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -410,9 +387,12 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowParticipants(!showParticipants)}
-                      aria-label={showParticipants ? "Hide participants" : "Show participants"}
                     >
-                      {showParticipants ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      {showParticipants ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -425,7 +405,7 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
                 <h1 className="text-xl font-semibold">{room.name}</h1>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Users className="h-4 w-4 mr-1" />
-                  {room.participant_count} participants
+                  {participants.length} participants
                 </div>
               </div>
             </div>
@@ -438,7 +418,6 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
                       variant="ghost"
                       size="icon"
                       onClick={handleLeaveRoom}
-                      aria-label="Leave room"
                     >
                       <ArrowLeftFromLine className="h-5 w-5" />
                     </Button>
@@ -457,7 +436,6 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
                         variant="ghost"
                         size="icon"
                         onClick={handleTerminateRoom}
-                        aria-label="Terminate room"
                       >
                         <Trash2 className="h-5 w-5 text-destructive" />
                       </Button>
@@ -476,7 +454,7 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
           </div>
         </header>
 
-        {/* Messages Area with Enhanced Scrolling */}
+        {/* Messages Area */}
         <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
@@ -497,10 +475,14 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
                   </span>
                   <Separator className="flex-1" />
                 </div>
-                {dateMessages.map((message: Message) => (
+                {dateMessages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.user_id === currentUser?.id ? "justify-end" : "justify-start"}`}
+                    className={`flex ${
+                      message.user_id === currentUser?.id
+                        ? "justify-end"
+                        : "justify-start"
+                    }`}
                   >
                     <div
                       className={`flex items-end space-x-2 max-w-md ${
@@ -545,8 +527,8 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
           <div ref={messagesEndRef} />
         </ScrollArea>
 
-        {/* Enhanced Message Input */}
-        <div className="p-4 border-t border-border bg-card ">
+        {/* Message Input */}
+        <div className="p-4 border-t border-border bg-card">
           <form
             onSubmit={handleSendMessage}
             className="flex items-center space-x-2"
@@ -556,7 +538,7 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
               value={newMessage}
               onChange={handleMessageChange}
               placeholder="Type your message... (Ctrl + J to focus)"
-              className=" flex-1"
+              className="flex-1"
               aria-label="Message input"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -592,4 +574,3 @@ export default function EnhancedRoomChat({ room, initialParticipant }: RoomChatP
     </div>
   );
 }
-
