@@ -1,9 +1,9 @@
-import React, { useState, useCallback, memo, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, memo, useEffect } from 'react';
+import { useRoom, useRoomPresence } from '@/hooks/useRoomHooks';
 import { createClient } from '@/utils/supabase/client';
-import { useRoomStore } from '@/store/useRoomStore';
-import { useRoomPresence, useRoom } from '@/hooks/useRoomHooks';
-import { format, formatDistanceToNow, differenceInSeconds } from 'date-fns';
+import { formatDistanceToNow, differenceInSeconds } from 'date-fns';
+import { motion } from 'motion/react';
+import { toast } from '@/hooks/use-toast';
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -15,14 +15,13 @@ import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "@/components/ui/hover-card"
+} from "@/components/ui/hover-card";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetFooter,
   SheetClose
 } from "@/components/ui/sheet";
 import {
@@ -35,54 +34,18 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogTrigger
-} from "@/components/ui/alert-dialog"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { toast } from "@/hooks/use-toast";
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Icons
 import {
   Globe, Lock, Users, Crown, Copy, LogOut, Trash2,
-  MessageCircle, Clock, Bell, BellOff, Timer,
-  Shield, ChevronRight, Activity, MessageSquare,
-  DoorOpen, UserPlus, UserMinus, Settings, Info,
-  AlertTriangle, CheckCircle2, XCircle, History,
-  Save, RefreshCw, Eye, EyeOff, MoreVertical,
-  Pin, PinOff, Hash, Timer as TimerIcon,
+  MessageCircle, Bell, BellOff, Timer, Info,
+  DoorOpen, Eye, EyeOff, Pin, PinOff, MessageSquare,
+  RefreshCw
 } from "lucide-react";
 
-// Timer animation variants
-const timerVariants = {
-  initial: { scale: 1 },
-  pulse: {
-    scale: [1, 1.1, 1],
-    transition: {
-      duration: 1,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  }
-};
-
-// Notification badge component
-const NotificationBadge = ({ count }) => (
-  <AnimatePresence>
-    {count > 0 && (
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0 }}
-        className="absolute -top-1 -right-1 bg-primary text-primary-foreground
-                   rounded-full min-w-[20px] h-5 px-1.5 flex items-center
-                   justify-center text-xs font-medium"
-      >
-        {count}
-      </motion.div>
-    )}
-  </AnimatePresence>
-);
-
-// Icon button component
 const IconButton = memo(({
                            icon: Icon,
                            onClick,
@@ -90,8 +53,7 @@ const IconButton = memo(({
                            active = false,
                            disabled = false,
                            variant = "ghost",
-                           className = "",
-                           showTooltip = true
+                           className = ""
                          }) => (
   <HoverCard openDelay={0} closeDelay={0}>
     <HoverCardTrigger asChild>
@@ -105,16 +67,14 @@ const IconButton = memo(({
         <Icon className="h-4 w-4" />
       </Button>
     </HoverCardTrigger>
-    {showTooltip && (
-      <HoverCardContent side="top" align="center" className="py-1 px-2">
-        <p className="text-xs">{label}</p>
-      </HoverCardContent>
-    )}
+    <HoverCardContent side="top" align="center" className="py-1 px-2">
+      <p className="text-xs">{label}</p>
+    </HoverCardContent>
   </HoverCard>
 ));
 
 // Room expiry countdown component
-const ExpiryCountdown = memo(({ expiresAt, onExpiringSoon }) => {
+const ExpiryCountdown = memo(({ expiresAt, onExpired, onExpiringSoon }) => {
   const [timeLeft, setTimeLeft] = useState('');
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
 
@@ -126,6 +86,7 @@ const ExpiryCountdown = memo(({ expiresAt, onExpiringSoon }) => {
 
       if (secondsLeft <= 0) {
         setTimeLeft('Expired');
+        onExpired?.();
         return;
       }
 
@@ -143,7 +104,19 @@ const ExpiryCountdown = memo(({ expiresAt, onExpiringSoon }) => {
     updateCountdown();
 
     return () => clearInterval(interval);
-  }, [expiresAt, onExpiringSoon, isExpiringSoon]);
+  }, [expiresAt, onExpired, onExpiringSoon, isExpiringSoon]);
+
+  const timerVariants = {
+    initial: { scale: 1 },
+    pulse: {
+      scale: [1, 1.1, 1],
+      transition: {
+        duration: 1,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }
+    }
+  };
 
   return (
     <motion.div
@@ -154,100 +127,123 @@ const ExpiryCountdown = memo(({ expiresAt, onExpiringSoon }) => {
         isExpiringSoon ? 'text-destructive' : 'text-muted-foreground'
       }`}
     >
-      <TimerIcon className="h-3 w-3" />
+      <Timer className="h-3 w-3" />
       <span className="text-sm font-medium">{timeLeft}</span>
     </motion.div>
   );
 });
 
-// Message preview component
-const MessagePreview = memo(({ message, isNew }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    className={`p-2 rounded-md ${isNew ? 'bg-primary/5' : 'bg-muted'}`}
-  >
-    <div className="flex items-start gap-2">
-      <Avatar className="h-6 w-6">
-        <AvatarImage src={`https://avatar.vercel.sh/${message.user_id}`} />
-        <AvatarFallback>{message.user_id.slice(0, 2).toUpperCase()}</AvatarFallback>
-      </Avatar>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm line-clamp-2">{message.content}</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-        </p>
-      </div>
+const NotificationBadge = memo(({ count }) => (
+  count > 0 ? (
+    <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground
+                    rounded-full min-w-[20px] h-5 px-1.5 flex items-center
+                    justify-center text-xs font-medium">
+      {count}
     </div>
-  </motion.div>
+  ) : null
 ));
 
-// Room status badge component
-const RoomStatusBadge = memo(({ type, participantCount, unreadCount }) => (
-  <div className="flex items-center gap-2">
-    <Badge
-      variant={type === 'private' ? 'destructive' : 'default'}
-      className="gap-1"
-    >
-      {type === 'private' ? (
-        <>
-          <Lock className="h-3 w-3" />
-          Private
-        </>
-      ) : (
-        <>
-          <Globe className="h-3 w-3" />
-          Public
-        </>
-      )}
-    </Badge>
-    <Badge variant="secondary" className="gap-1">
-      <Users className="h-3 w-3" />
-      {participantCount}
-    </Badge>
-    {unreadCount > 0 && (
-      <Badge variant="default" className="gap-1">
-        <MessageCircle className="h-3 w-3" />
-        {unreadCount}
-      </Badge>
-    )}
-  </div>
-));
-
-// Main Room Card Component
 const RoomCard = memo(({
                          room,
+                         currentUserId,
                          onSelect,
                          onJoin,
                          onLeave,
                          onTerminate,
-                         currentUserId,
-                         hasJoined,
                          selectedRoom,
                        }) => {
-  // State
+  // Local state
   const [showDetails, setShowDetails] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
-  const [lastMessage, setLastMessage] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Hooks
-  const supabase = createClient();
-  const { participants } = useRoom(room.id);
-  const isCreator = room.created_by === currentUserId;
-  const isPrivate = room.type === 'private';
+  // Custom hooks
+  const { room: roomData, participants, loading, error } = useRoom(room.id);
   const isSelected = selectedRoom?.id === room.id;
-  const isExpired = room.expires_at && new Date(room.expires_at) < new Date();
+  const hasJoined = participants?.some(p => p.user_id === currentUserId);
 
-  // Message subscription
+  // Custom presence handling
+  useEffect(() => {
+    if (!hasJoined || !room.id || !currentUserId) return;
+
+    const supabase = createClient();
+    let lastUpdate = Date.now();
+
+    const updatePresence = async () => {
+      try {
+        const now = Date.now();
+        if (now - lastUpdate < 30000) return; // Throttle updates to every 30 seconds
+
+        const { error } = await supabase
+          .from('room_participants')
+          .update({ last_activity: new Date().toISOString() })
+          .eq('room_id', room.id)
+          .eq('user_id', currentUserId);
+
+        if (error) {
+          console.warn('Presence update failed:', error.message);
+          return;
+        }
+
+        lastUpdate = now;
+      } catch (err) {
+        console.warn('Presence update error:', err);
+      }
+    };
+
+    // Initial presence update
+    updatePresence();
+
+    // Set up interval for periodic updates
+    const interval = setInterval(updatePresence, 30000);
+
+    // Update presence on user activity
+    const activityEvents = ['mousedown', 'keydown', 'mousemove', 'touchstart'];
+    const handleActivity = () => {
+      const now = Date.now();
+      if (now - lastUpdate >= 30000) {
+        updatePresence();
+      }
+    };
+
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // Cleanup function
+    return () => {
+      clearInterval(interval);
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+
+      // Final presence update on unmount
+      supabase
+        .from('room_participants')
+        .update({ last_activity: new Date().toISOString() })
+        .eq('room_id', room.id)
+        .eq('user_id', currentUserId)
+        .then(() => console.log('Final presence update completed'))
+        .catch(err => console.warn('Final presence update failed:', err));
+    };
+  }, [room.id, currentUserId, hasJoined]);
+
+  // Reset unread count when room is selected
+  useEffect(() => {
+    if (isSelected) {
+      setUnreadCount(0);
+    }
+  }, [isSelected]);
+
+  // Subscribe to new messages
   useEffect(() => {
     if (!hasJoined) return;
 
+    const supabase = createClient();
     const channel = supabase
       .channel(`room-${room.id}-messages`)
       .on(
@@ -259,10 +255,7 @@ const RoomCard = memo(({
           filter: `room_id=eq.${room.id}`
         },
         (payload) => {
-          const newMessage = payload.new;
-          setLastMessage(newMessage);
-
-          if (selectedRoom?.id !== room.id) {
+          if (!isSelected && payload.new.user_id !== currentUserId) {
             setUnreadCount(prev => prev + 1);
 
             if (notificationsEnabled) {
@@ -270,7 +263,7 @@ const RoomCard = memo(({
                 title: room.name,
                 description: (
                   <div className="flex flex-col gap-2">
-                    <p>{newMessage.content}</p>
+                    <p>{payload.new.content}</p>
                     <Button
                       variant="outline"
                       size="sm"
@@ -287,62 +280,31 @@ const RoomCard = memo(({
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
-  }, [room.id, hasJoined, selectedRoom?.id, notificationsEnabled]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [room.id, hasJoined, isSelected, currentUserId, notificationsEnabled]);
 
-  // Reset unread count when room is selected
-  useEffect(() => {
-    if (selectedRoom?.id === room.id) {
-      setUnreadCount(0);
-    }
-  }, [selectedRoom?.id, room.id]);
-
-  // Handlers
   const handleJoinRoom = async () => {
-    setIsLoading(true);
     try {
-      await onJoin(room, isPrivate ? password : undefined);
+      await onJoin(room, password);
       setPassword('');
       setShowPasswordDialog(false);
-      setShowPassword(false);
       toast({ description: "Successfully joined the room" });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
         description: error instanceof Error ? error.message : "Failed to join room"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleExpiringSoon = () => {
-    if (isCreator) {
-      toast({
-        title: "Room Expiring Soon",
-        description: (
-          <div className="flex flex-col gap-2">
-            <p>This room will expire in 30 seconds</p>
-            <Button
-              variant="outline"
-              onClick={() => handleExtendRoom()}
-              className="w-full"
-            >
-              Extend Room by 30 Minutes
-            </Button>
-          </div>
-        ),
-        duration: 10000,
       });
     }
   };
 
   const handleExtendRoom = async () => {
-    setIsLoading(true);
+    const supabase = createClient();
+
     try {
-      const newExpiryDate = new Date(room.expires_at);
-      newExpiryDate.setMinutes(newExpiryDate.getMinutes() + 30);
+      const newExpiryDate = new Date(roomData.expires_at);
+      newExpiryDate.setMinutes(newExpiryDate.getMinutes() + 2);
 
       const { error } = await supabase
         .from('rooms')
@@ -352,17 +314,53 @@ const RoomCard = memo(({
       if (error) throw error;
 
       toast({
-        description: "Room extended by 30 minutes",
+        description: "Room extended by 2 minutes",
       });
     } catch (error) {
       toast({
         variant: "destructive",
         description: "Failed to extend room"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <Card className="p-4 animate-pulse">
+        <div className="h-6 bg-muted rounded w-1/3 mb-4" />
+        <div className="h-4 bg-muted rounded w-1/2 mb-2" />
+        <div className="h-4 bg-muted rounded w-1/4" />
+      </Card>
+    );
+  }
+
+  if (error || !roomData) {
+    return (
+      <Card className="p-4">
+        <div className="text-destructive">Failed to load room data</div>
+      </Card>
+    );
+  }
+
+  const isCreator = roomData.created_by === currentUserId;
+  const isPrivate = roomData.type === 'private';
+  const isExpired = roomData.expires_at && new Date(roomData.expires_at) < new Date();
+
+  const handleRoomExpiry = async () => {
+    await onTerminate(roomData);
+    onSelect?.(null);
+
+    const message = isCreator ?
+      "The room has been automatically terminated due to expiration." :
+      "This room has been terminated due to expiration.";
+
+    toast({
+      title: "Room Expired",
+      description: message
+    });
+  };
+
+
 
   return (
     <Card className={`
@@ -372,7 +370,7 @@ const RoomCard = memo(({
       relative overflow-hidden transition-all duration-300
     `}>
       <div className="p-4">
-        {/* Header */}
+        {/* Header Section */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className="relative shrink-0">
@@ -390,14 +388,21 @@ const RoomCard = memo(({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold truncate">{room.name}</h3>
+                <h3 className="font-semibold truncate">{roomData.name}</h3>
                 {isCreator && <Crown className="h-4 w-4 text-yellow-500" />}
               </div>
-              <RoomStatusBadge
-                type={room.type}
-                participantCount={room.participant_count}
-                unreadCount={unreadCount}
-              />
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="secondary" className="gap-1">
+                  <Users className="h-3 w-3" />
+                  {participants.length}
+                </Badge>
+                {roomData.expires_at && (
+                  <Badge variant="outline" className="gap-1">
+                    <Timer className="h-3 w-3" />
+                    {formatDistanceToNow(new Date(roomData.expires_at), { addSuffix: true })}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
@@ -419,7 +424,7 @@ const RoomCard = memo(({
                 />
                 <IconButton
                   icon={MessageSquare}
-                  onClick={() => onSelect?.(room)}
+                  onClick={() => onSelect?.(roomData)}
                   label="Open chat"
                   variant="outline"
                   className="text-primary"
@@ -440,46 +445,57 @@ const RoomCard = memo(({
 
         {/* Room Status */}
         <div className="mt-4 space-y-4">
-          {/* Capacity Bar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>Room Capacity</span>
-              <span>{room.participant_count}/100</span>
+              <span>{participants.length}/100</span>
             </div>
             <Progress
-              value={(room.participant_count / 100) * 100}
+              value={(participants.length / 100) * 100}
               className="h-1.5"
             />
           </div>
 
           {/* Expiry Timer */}
-          {room.expires_at && (
+          {roomData.expires_at && (
             <div className="flex items-center justify-between">
               <ExpiryCountdown
-                expiresAt={room.expires_at}
-                onExpiringSoon={handleExpiringSoon}
+                expiresAt={roomData.expires_at}
+                onExpired={handleRoomExpiry}
+                onExpiringSoon={() => {
+                  if (isCreator) {
+                    toast({
+                      title: "Room Expiring Soon",
+                      description: (
+                        <div className="flex flex-col gap-2">
+                          <p>This room will expire in 30 seconds</p>
+                          <Button
+                            variant="outline"
+                            onClick={handleExtendRoom}
+                            className="w-full"
+                          >
+                            Extend Room by 30 Minutes
+                          </Button>
+                        </div>
+                      ),
+                      duration: 10000,
+                    });
+                  }
+                }}
               />
               {isCreator && !isExpired && (
                 <IconButton
                   icon={RefreshCw}
                   onClick={handleExtendRoom}
                   label="Extend room time"
-                  disabled={isLoading}
                 />
               )}
             </div>
           )}
 
-          {/* Last Message Preview */}
-          {hasJoined && lastMessage && (
-            <MessagePreview
-              message={lastMessage}
-              isNew={unreadCount > 0}
-            />
-          )}
         </div>
 
-        {/* Quick Actions */}
+        {/* Footer Actions */}
         {hasJoined && (
           <div className="mt-4 pt-4 border-t flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -488,7 +504,7 @@ const RoomCard = memo(({
                 <AvatarFallback>{currentUserId.slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <span className="text-sm text-muted-foreground">
-                {participants?.length} members
+                {participants.length} members
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -513,7 +529,7 @@ const RoomCard = memo(({
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => onTerminate(room)}
+                        onClick={() => onTerminate(roomData)}
                         className="bg-destructive text-destructive-foreground
                                  hover:bg-destructive/90"
                       >
@@ -541,16 +557,9 @@ const RoomCard = memo(({
         )}
       </div>
 
+
       {/* Room Details Sheet */}
-      <Sheet
-        open={showDetails}
-        onOpenChange={(open) => {
-          setShowDetails(open);
-          if (!open) {
-            setShowPassword(false);
-          }
-        }}
-      >
+      <Sheet open={showDetails} onOpenChange={setShowDetails}>
         <SheetContent className="sm:max-w-lg">
           <SheetHeader>
             <SheetTitle>Room Details</SheetTitle>
@@ -560,7 +569,6 @@ const RoomCard = memo(({
           </SheetHeader>
 
           <div className="py-6 space-y-6">
-            {/* Room Information */}
             <div className="space-y-4">
               <h4 className="font-medium">Room Information</h4>
               <div className="grid gap-4">
@@ -568,12 +576,12 @@ const RoomCard = memo(({
                   <span className="text-muted-foreground">Room Code</span>
                   <div className="flex items-center gap-2">
                     <code className="bg-muted px-2 py-1 rounded text-sm">
-                      {room.room_code}
+                      {roomData.room_code}
                     </code>
                     <IconButton
                       icon={Copy}
                       onClick={() => {
-                        navigator.clipboard.writeText(room.room_code);
+                        navigator.clipboard.writeText(roomData.room_code);
                         toast({ description: "Room code copied" });
                       }}
                       label="Copy room code"
@@ -585,7 +593,7 @@ const RoomCard = memo(({
                     <span className="text-muted-foreground">Password</span>
                     <div className="flex items-center gap-2">
                       <code className="bg-muted px-2 py-1 rounded text-sm">
-                        {showPassword ? room.password : '••••••'}
+                        {showPassword ? roomData.password : '••••••'}
                       </code>
                       <IconButton
                         icon={showPassword ? EyeOff : Eye}
@@ -595,7 +603,7 @@ const RoomCard = memo(({
                       <IconButton
                         icon={Copy}
                         onClick={() => {
-                          navigator.clipboard.writeText(room.password!);
+                          navigator.clipboard.writeText(roomData.password!);
                           toast({ description: "Password copied" });
                         }}
                         label="Copy password"
@@ -612,47 +620,53 @@ const RoomCard = memo(({
                 <h4 className="font-medium">Participants</h4>
                 <Badge variant="secondary">
                   <Users className="h-3 w-3 mr-1" />
-                  {participants?.length || 0}
+                  {participants.length}
                 </Badge>
               </div>
-              <ScrollArea className="h-[200px]">
+              <ScrollArea className="h-64">
                 <div className="space-y-2">
-                  {participants?.map((participant) => (
-                    <div
-                      key={participant.user_id}
-                      className="flex items-center justify-between p-2 rounded-lg
-                               hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage
-                            src={`https://avatar.vercel.sh/${participant.user_id}`}
-                          />
-                          <AvatarFallback>
-                            {participant.user_id.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">
-                            {participant.user_id === currentUserId ?
-                              'You' : participant.user_id}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(
-                              new Date(participant.joined_at),
-                              { addSuffix: true }
-                            )}
-                          </p>
+                  {participants.map((participant) => {
+                    const isOnline = new Date(participant.last_activity).getTime() > Date.now() - 5 * 60 * 1000;
+
+                    return (
+                      <div
+                        key={participant.user_id}
+                        className="flex items-center justify-between p-2 rounded-lg
+                                 hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage
+                                src={`https://avatar.vercel.sh/${participant.user_id}`}
+                              />
+                              <AvatarFallback>
+                                {participant.user_id.slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div
+                              className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full
+                                        ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
+                            />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">
+                              {participant.user_id === currentUserId ? 'You' : participant.user_id}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Joined {formatDistanceToNow(new Date(participant.joined_at), { addSuffix: true })}
+                            </p>
+                          </div>
                         </div>
+                        {participant.user_id === roomData.created_by && (
+                          <Badge variant="secondary">
+                            <Crown className="h-3 w-3 mr-1" />
+                            Owner
+                          </Badge>
+                        )}
                       </div>
-                      {participant.user_id === room.created_by && (
-                        <Badge variant="secondary">
-                          <Crown className="h-3 w-3 mr-1" />
-                          Owner
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </div>
@@ -666,7 +680,7 @@ const RoomCard = memo(({
           <AlertDialogHeader>
             <AlertDialogTitle>Join Private Room</AlertDialogTitle>
             <AlertDialogDescription>
-              Enter the room password to join {room.name}
+              Enter the room password to join {roomData.name}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid gap-4 py-4">
@@ -687,7 +701,7 @@ const RoomCard = memo(({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleJoinRoom}
-              disabled={!password || isLoading}
+              disabled={!password}
             >
               Join Room
             </AlertDialogAction>

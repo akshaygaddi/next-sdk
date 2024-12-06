@@ -1,10 +1,11 @@
 // hooks/useRoomHooks.ts
-import { useMemo, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useEffect, useCallback, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRoomStore } from '@/store/useRoomStore';
 import { toast } from '@/hooks/use-toast';
+import { debounce } from 'lodash';
 
-// Types
+// Enhanced Types
 interface Room {
   id: string;
   name: string;
@@ -14,304 +15,358 @@ interface Room {
   room_code: string;
   password: string | null;
   participant_count: number;
+  expires_at: string | null;
   last_message?: {
     content: string;
     created_at: string;
+    user_id: string;
   };
+  metadata?: Record<string, any>;
+}
+
+interface RoomParticipant {
+  room_id: string;
+  user_id: string;
+  joined_at: string;
+  last_activity: string;
+  role: 'owner' | 'moderator' | 'member';
+  metadata?: Record<string, any>;
 }
 
 interface RoomFilters {
   searchQuery?: string;
   type?: 'public' | 'private' | 'all';
   showJoinedOnly?: boolean;
-  sortBy?: 'recent' | 'popular' | 'alphabetical';
+  sortBy?: 'recent' | 'popular' | 'alphabetical' | 'expiringSoon';
+  status?: 'active' | 'expired' | 'all';
 }
 
-// Utility function to sort rooms
-const sortRooms = (rooms: Room[], sortBy: string = 'recent'): Room[] => {
-  return [...rooms].sort((a, b) => {
-    switch (sortBy) {
-      case 'popular':
-        return (b.participant_count || 0) - (a.participant_count || 0);
-      case 'alphabetical':
-        return a.name.localeCompare(b.name);
-      case 'recent':
-      default:
-        return b.last_message
-          ? new Date(b.last_message.created_at).getTime() - new Date(a.last_message?.created_at || 0).getTime()
-          : -1;
-    }
-  });
+// Utility Functions
+const createRoomChannel = (supabase: any, roomId: string, callbacks: {
+  onUpdate?: (payload: any) => void;
+  onDelete?: (payload: any) => void;
+  onParticipantChange?: (payload: any) => void;
+  onMessage?: (payload: any) => void;
+}) => {
+  const channel = supabase.channel(`room:${roomId}`);
+
+  if (callbacks.onUpdate || callbacks.onDelete) {
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'rooms',
+        filter: `id=eq.${roomId}`
+      },
+      (payload: any) => {
+        if (payload.eventType === 'UPDATE' && callbacks.onUpdate) {
+          callbacks.onUpdate(payload);
+        } else if (payload.eventType === 'DELETE' && callbacks.onDelete) {
+          callbacks.onDelete(payload);
+        }
+      }
+    );
+  }
+
+  if (callbacks.onParticipantChange) {
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'room_participants',
+        filter: `room_id=eq.${roomId}`
+      },
+      callbacks.onParticipantChange
+    );
+  }
+
+  if (callbacks.onMessage) {
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `room_id=eq.${roomId}`
+      },
+      callbacks.onMessage
+    );
+  }
+
+  return channel;
 };
 
-// Main hooks
+// Enhanced Hooks
+export const useRoom = (roomId: string) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [participants, setParticipants] = useState<RoomParticipant[]>([]);
+  const supabase = createClient();
+  const channelRef = useRef<any>(null);
+
+  const fetchRoomData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // Fetch room and participant data in parallel
+      const [roomResponse, participantsResponse] = await Promise.all([
+        supabase
+          .from('rooms')
+          .select(`
+            *,
+            messages (
+              content,
+              created_at,
+              user_id
+            )
+          `)
+          .eq('id', roomId)
+          .single(),
+        supabase
+          .from('room_participants')
+          .select('*')
+          .eq('room_id', roomId)
+      ]);
+
+      if (roomResponse.error) throw roomResponse.error;
+      if (participantsResponse.error) throw participantsResponse.error;
+
+      setRoom(roomResponse.data);
+      setParticipants(participantsResponse.data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch room data'));
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load room data"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [roomId]);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!roomId) return;
+
+    const channel = createRoomChannel(supabase, roomId, {
+      onUpdate: (payload) => {
+        setRoom(prev => ({
+          ...prev,
+          ...payload.new
+        }));
+
+        // Handle room expiration
+        if (!payload.new.is_active) {
+          toast({
+            title: "Room Expired",
+            description: "This room has been terminated or expired."
+          });
+        }
+      },
+      onDelete: () => {
+        setRoom(null);
+        toast({
+          title: "Room Deleted",
+          description: "This room has been deleted."
+        });
+      },
+      onParticipantChange: (payload) => {
+        setParticipants(prev => {
+          if (payload.eventType === 'DELETE') {
+            return prev.filter(p => p.user_id !== payload.old.user_id);
+          } else if (payload.eventType === 'INSERT') {
+            return [...prev, payload.new];
+          } else {
+            return prev.map(p =>
+              p.user_id === payload.new.user_id ? payload.new : p
+            );
+          }
+        });
+      },
+      onMessage: (payload) => {
+        setRoom(prev => ({
+          ...prev,
+          last_message: {
+            content: payload.new.content,
+            created_at: payload.new.created_at,
+            user_id: payload.new.user_id
+          }
+        }));
+      }
+    });
+
+    channelRef.current = channel;
+    channel.subscribe();
+
+    // Initial fetch
+    fetchRoomData();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomId, fetchRoomData]);
+
+  return { room, participants, loading, error, refetch: fetchRoomData };
+};
+
+// Enhanced room presence tracking
+export const useRoomPresence = (roomId: string, userId: string | null) => {
+  const supabase = createClient();
+  const lastActivityRef = useRef<number>(Date.now());
+  const updateQueue = useRef<Promise<any>>(Promise.resolve());
+
+  // Debounced presence update to prevent too many DB writes
+  const updatePresence = useCallback(
+    debounce(async () => {
+      if (!roomId || !userId) return;
+
+      const now = Date.now();
+      if (now - lastActivityRef.current < 30000) return;
+
+      updateQueue.current = updateQueue.current.then(async () => {
+        try {
+          const { error } = await supabase
+            .from('room_participants')
+            .update({ last_activity: new Date().toISOString() })
+            .eq('room_id', roomId)
+            .eq('user_id', userId);
+
+          if (error) throw error;
+          lastActivityRef.current = now;
+        } catch (error) {
+          console.error('Failed to update presence:', error);
+        }
+      });
+    }, 1000),
+    [roomId, userId]
+  );
+
+  useEffect(() => {
+    if (!roomId || !userId) return;
+
+    const events = ['mousedown', 'keydown', 'touchstart', 'mousemove'];
+    const handleActivity = updatePresence;
+
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    const interval = setInterval(updatePresence, 30000);
+
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      clearInterval(interval);
+      updatePresence.cancel();
+    };
+  }, [roomId, userId, updatePresence]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (roomId && userId) {
+        supabase
+          .from('room_participants')
+          .update({ last_activity: new Date().toISOString() })
+          .eq('room_id', roomId)
+          .eq('user_id', userId)
+          .then(() => {
+            console.log('Final presence update completed');
+          })
+          .catch(console.error);
+      }
+    };
+  }, [roomId, userId]);
+};
+
+// Enhanced filtered rooms hook with caching
 export const useFilteredRooms = (filters: RoomFilters) => {
   const rooms = useRoomStore(state => Array.from(state.rooms.values()));
   const joinedRooms = useRoomStore(state => state.joinedRooms);
-  const { searchQuery = '', type = 'all', showJoinedOnly = false, sortBy = 'recent' } = filters;
+  const {
+    searchQuery = '',
+    type = 'all',
+    showJoinedOnly = false,
+    sortBy = 'recent',
+    status = 'active'
+  } = filters;
 
   return useMemo(() => {
     let filteredRooms = rooms.filter(room => {
       const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = type === 'all' || room.type === type;
       const matchesJoinedFilter = !showJoinedOnly || joinedRooms.has(room.id);
+      const matchesStatus = status === 'all' ||
+        (status === 'active' ? room.is_active : !room.is_active);
 
-      return matchesSearch && matchesType && matchesJoinedFilter;
+      return matchesSearch && matchesType && matchesJoinedFilter && matchesStatus;
     });
 
-    return sortRooms(filteredRooms, sortBy);
-  }, [rooms, searchQuery, type, showJoinedOnly, sortBy, joinedRooms]);
-};
-
-export const useRoom = (roomId: string) => {
-  const room = useRoomStore(state => state.rooms.get(roomId));
-  const participants = useRoomStore(state => state.participants.get(roomId));
-  const fetchParticipants = useRoomStore(state => state.fetchParticipants);
-  const loading = useRoomStore(state => state.loading);
-
-  useEffect(() => {
-    if (roomId && !participants) {
-      fetchParticipants(roomId);
-    }
-  }, [roomId, participants, fetchParticipants]);
-
-  return {
-    room,
-    participants,
-    loading: loading.participants,
-  };
-};
-
-export const useRoomSubscription = (roomId?: string) => {
-  const supabase = createClient();
-  const fetchRooms = useRoomStore(state => state.fetchRooms);
-  const updateRoomParticipantCount = useRoomStore(state => state.updateRoomParticipantCount);
-  const updateLastMessage = useRoomStore(state => state.updateLastMessage);
-
-  useEffect(() => {
-    const channels: any[] = [];
-
-    // Subscribe to general room updates
-    const roomChannel = supabase
-      .channel('public:rooms')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'rooms',
-          filter: 'is_active=eq.true'
-        },
-        () => {
-          fetchRooms();
-        }
-      )
-      .subscribe();
-
-    channels.push(roomChannel);
-
-    // Subscribe to specific room if provided
-    if (roomId) {
-      // Participants subscription
-      const participantsChannel = supabase
-        .channel(`room-${roomId}-participants`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'room_participants',
-            filter: `room_id=eq.${roomId}`
-          },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              updateRoomParticipantCount(roomId, 1);
-            } else if (payload.eventType === 'DELETE') {
-              updateRoomParticipantCount(roomId, -1);
-            }
-          }
-        )
-        .subscribe();
-
-      // Messages subscription
-      const messagesChannel = supabase
-        .channel(`room-${roomId}-messages`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `room_id=eq.${roomId}`
-          },
-          (payload) => {
-            if (payload.new) {
-              updateLastMessage(roomId, {
-                content: payload.new.content,
-                created_at: payload.new.created_at
-              });
-            }
-          }
-        )
-        .subscribe();
-
-      channels.push(participantsChannel, messagesChannel);
-    }
-
-    return () => {
-      channels.forEach(channel => {
-        supabase.removeChannel(channel);
-      });
-    };
-  }, [roomId, fetchRooms, updateRoomParticipantCount, updateLastMessage]);
-};
-
-export const useRoomActions = (userId: string | null) => {
-  const joinRoom = useRoomStore(state => state.joinRoom);
-  const leaveRoom = useRoomStore(state => state.leaveRoom);
-  const terminateRoom = useRoomStore(state => state.terminateRoom);
-  const loading = useRoomStore(state => state.loading);
-
-  const handleJoinRoom = useCallback(async (room: Room, password?: string) => {
-    if (!userId) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to join a room",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (room.type === 'private' && !password) {
-      toast({
-        title: "Error",
-        description: "Password required for private rooms",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      await joinRoom(room, password);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to join room",
-        variant: "destructive"
-      });
-    }
-  }, [userId, joinRoom]);
-
-  const handleLeaveRoom = useCallback(async (roomId: string) => {
-    if (!userId) return;
-
-    try {
-      await leaveRoom(roomId);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to leave room",
-        variant: "destructive"
-      });
-    }
-  }, [userId, leaveRoom]);
-
-  const handleTerminateRoom = useCallback(async (room: Room) => {
-    if (!userId || room.created_by !== userId) {
-      toast({
-        title: "Error",
-        description: "Not authorized to terminate this room",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      await terminateRoom(room);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to terminate room",
-        variant: "destructive"
-      });
-    }
-  }, [userId, terminateRoom]);
-
-  return {
-    joinRoom: handleJoinRoom,
-    leaveRoom: handleLeaveRoom,
-    terminateRoom: handleTerminateRoom,
-    loading
-  };
-};
-
-// Utility hooks
-export const useRoomPresence = (roomId: string, userId: string | null) => {
-  const lastActivityRef = useRef<number>(Date.now());
-  const supabase = createClient();
-
-  useEffect(() => {
-    if (!roomId || !userId) return;
-
-    const updatePresence = async () => {
-      const now = Date.now();
-      if (now - lastActivityRef.current < 30000) return; // Update every 30 seconds
-
-      try {
-        await supabase
-          .from('room_participants')
-          .update({ last_activity: new Date().toISOString() })
-          .eq('room_id', roomId)
-          .eq('user_id', userId);
-
-        lastActivityRef.current = now;
-      } catch (error) {
-        console.error('Failed to update presence:', error);
+    // Enhanced sorting with expiration consideration
+    return filteredRooms.sort((a, b) => {
+      switch (sortBy) {
+        case 'expiringSoon':
+          const aExpiry = a.expires_at ? new Date(a.expires_at).getTime() : Infinity;
+          const bExpiry = b.expires_at ? new Date(b.expires_at).getTime() : Infinity;
+          return aExpiry - bExpiry;
+        case 'popular':
+          return (b.participant_count || 0) - (a.participant_count || 0);
+        case 'alphabetical':
+          return a.name.localeCompare(b.name);
+        case 'recent':
+        default:
+          const aTime = a.last_message?.created_at
+            ? new Date(a.last_message.created_at).getTime()
+            : 0;
+          const bTime = b.last_message?.created_at
+            ? new Date(b.last_message.created_at).getTime()
+            : 0;
+          return bTime - aTime;
       }
-    };
-
-    const interval = setInterval(updatePresence, 30000);
-    const events = ['mousedown', 'keydown', 'touchstart'];
-
-    const handleActivity = () => {
-      updatePresence();
-    };
-
-    events.forEach(event => {
-      window.addEventListener(event, handleActivity);
     });
-
-    return () => {
-      clearInterval(interval);
-      events.forEach(event => {
-        window.removeEventListener(event, handleActivity);
-      });
-    };
-  }, [roomId, userId]);
+  }, [rooms, searchQuery, type, showJoinedOnly, sortBy, status, joinedRooms]);
 };
 
-export const useRoomKeyboardShortcuts = (roomId: string) => {
-  const setSelectedRoom = useRoomStore(state => state.setSelectedRoom);
+// Keyboard navigation hook with room switching
+export const useRoomKeyboardShortcuts = (
+  roomId: string | null,
+  onRoomChange: (roomId: string) => void
+) => {
   const rooms = useRoomStore(state => Array.from(state.rooms.values()));
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Alt + Arrow navigation between rooms
-      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-        e.preventDefault();
+      if (!e.altKey || !roomId) return;
 
-        const currentIndex = rooms.findIndex(room => room.id === roomId);
-        if (currentIndex === -1) return;
+      const currentIndex = rooms.findIndex(room => room.id === roomId);
+      if (currentIndex === -1) return;
 
-        const nextIndex = e.key === 'ArrowUp'
-          ? (currentIndex - 1 + rooms.length) % rooms.length
-          : (currentIndex + 1) % rooms.length;
+      let nextIndex: number;
+      switch (e.key) {
+        case 'ArrowUp':
+          nextIndex = (currentIndex - 1 + rooms.length) % rooms.length;
+          break;
+        case 'ArrowDown':
+          nextIndex = (currentIndex + 1) % rooms.length;
+          break;
+        default:
+          return;
+      }
 
-        setSelectedRoom(rooms[nextIndex]);
+      e.preventDefault();
+      const nextRoom = rooms[nextIndex];
+      if (nextRoom && nextRoom.is_active) {
+        onRoomChange(nextRoom.id);
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [roomId, rooms, setSelectedRoom]);
+  }, [roomId, rooms, onRoomChange]);
 };
