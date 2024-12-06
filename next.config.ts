@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  async redirects() {
+    return [];
+  },
   /* config options here */
   images: {
     remotePatterns: [

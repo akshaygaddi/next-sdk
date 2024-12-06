@@ -346,22 +346,6 @@ const RoomCard = memo(({
   const isPrivate = roomData.type === 'private';
   const isExpired = roomData.expires_at && new Date(roomData.expires_at) < new Date();
 
-  const handleRoomExpiry = async () => {
-    await onTerminate(roomData);
-    onSelect?.(null);
-
-    const message = isCreator ?
-      "The room has been automatically terminated due to expiration." :
-      "This room has been terminated due to expiration.";
-
-    toast({
-      title: "Room Expired",
-      description: message
-    });
-  };
-
-
-
   return (
     <Card className={`
       ${isSelected ? 'ring-2 ring-primary' : ''}
@@ -461,7 +445,15 @@ const RoomCard = memo(({
             <div className="flex items-center justify-between">
               <ExpiryCountdown
                 expiresAt={roomData.expires_at}
-                onExpired={handleRoomExpiry}
+                onExpired={async () => {
+                  if (isCreator) {
+                    await onTerminate(roomData);
+                    toast({
+                      title: "Room Expired",
+                      description: "The room has been automatically terminated due to expiration."
+                    });
+                  }
+                }}
                 onExpiringSoon={() => {
                   if (isCreator) {
                     toast({
@@ -474,7 +466,7 @@ const RoomCard = memo(({
                             onClick={handleExtendRoom}
                             className="w-full"
                           >
-                            Extend Room by 30 Minutes
+                            Extend Room by 2 Minutes
                           </Button>
                         </div>
                       ),
@@ -492,7 +484,6 @@ const RoomCard = memo(({
               )}
             </div>
           )}
-
         </div>
 
         {/* Footer Actions */}
@@ -556,7 +547,6 @@ const RoomCard = memo(({
           </div>
         )}
       </div>
-
 
       {/* Room Details Sheet */}
       <Sheet open={showDetails} onOpenChange={setShowDetails}>
