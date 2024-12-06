@@ -33,7 +33,7 @@ export default function RoomsPage() {
       {isDesktop && (
         <div
           className={`relative ${
-            sidebarOpen ? "w-80" : "w-0"
+            sidebarOpen ? "w-[25rem]" : "w-0"
           } border-r bg-card transition-all duration-300 ease-in-out overflow-hidden`}
         >
           <div className="h-full">

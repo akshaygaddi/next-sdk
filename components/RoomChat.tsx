@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+"use client";
+
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -18,6 +20,8 @@ import {
   Loader2,
   AlertCircle,
   Crown,
+  Lock,
+  Globe,
 } from "lucide-react";
 import { formatDistanceToNow, formatDistance } from "date-fns";
 import { toast } from "@/hooks/use-toast";
@@ -27,132 +31,107 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useVirtualizer } from '@tanstack/react-virtual';
 
-// Message component for better performance
-const ChatMessage = React.memo(({ message, currentUser, isLastMessage }) => {
+// Message Component
+const Message = React.memo(({ message, currentUser, showAvatar = true }) => {
   const isOwnMessage = message.user_id === currentUser?.id;
 
   return (
     <div
-      className={`flex ${
-        isOwnMessage ? "justify-end" : "justify-start"
+      className={`flex items-end gap-2 ${
+        isOwnMessage ? "flex-row-reverse" : "flex-row"
       }`}
     >
+      {!isOwnMessage && showAvatar && (
+        <Avatar className="h-8 w-8">
+          <AvatarImage
+            src={`https://avatar.vercel.sh/${message.user_id}`}
+            alt={`${message.user_id}'s avatar`}
+          />
+          <AvatarFallback>
+            {message.user_id.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      )}
+      {!isOwnMessage && !showAvatar && <div className="w-8" />}
       <div
-        className={`flex items-end space-x-2 max-w-md ${
-          isOwnMessage ? "flex-row-reverse space-x-reverse" : ""
+        className={`group relative px-3 py-2 rounded-2xl max-w-[75%] break-words ${
+          isOwnMessage
+            ? "bg-primary text-primary-foreground rounded-tr-none"
+            : "bg-muted rounded-tl-none"
         }`}
       >
         {!isOwnMessage && (
-          <Avatar className="h-8 w-8">
-            <AvatarImage
-              src={`https://avatar.vercel.sh/${message.user_id}`}
-              alt={`${message.user_id}'s avatar`}
-            />
-            <AvatarFallback>
-              {message.user_id.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <p className="text-xs text-muted-foreground mb-1">
+            {message.user_id}
+          </p>
         )}
-        <div
-          className={`group relative px-4 py-2 rounded-2xl ${
-            isOwnMessage
-              ? "bg-primary text-primary-foreground rounded-tr-none"
-              : "bg-accent rounded-tl-none"
-          }`}
-        >
-          <p className="text-sm whitespace-pre-wrap break-words">
-            {message.content}
-          </p>
-          <p className="text-xs mt-1 opacity-70">
-            {formatDistanceToNow(new Date(message.created_at), {
-              addSuffix: true,
-            })}
-          </p>
-        </div>
+        <p className="text-sm">{message.content}</p>
+        <p className="text-[10px] mt-1 opacity-70">
+          {formatDistanceToNow(new Date(message.created_at), {
+            addSuffix: true,
+          })}
+        </p>
       </div>
     </div>
   );
 });
 
-// Participant component
+// Participant Card Component
 const ParticipantCard = React.memo(({ participant, isCreator }) => (
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent/50 transition-colors">
-          <Avatar className="h-10 w-10">
-            <AvatarImage
-              src={`https://avatar.vercel.sh/${participant.user_id}`}
-              alt={`${participant.user_id}'s avatar`}
-            />
-            <AvatarFallback>
-              {participant.user_id.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-medium truncate">
-                {participant.user_id}
-              </p>
-              {isCreator && (
-                <Crown className="h-3 w-3 text-primary/70" />
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(participant.joined_at), {
-                addSuffix: true,
-              })}
-            </p>
-          </div>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>
-          Joined {new Date(participant.joined_at).toLocaleDateString()}
+  <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent/50 transition-colors">
+    <Avatar className="h-8 w-8">
+      <AvatarImage
+        src={`https://avatar.vercel.sh/${participant.user_id}`}
+        alt={`${participant.user_id}'s avatar`}
+      />
+      <AvatarFallback>
+        {participant.user_id.slice(0, 2).toUpperCase()}
+      </AvatarFallback>
+    </Avatar>
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2">
+        <p className="font-medium truncate text-sm">
+          {participant.user_id}
         </p>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
+        {isCreator && (
+          <Badge variant="secondary" className="h-5">
+            <Crown className="h-3 w-3 mr-1" />
+            Owner
+          </Badge>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {formatDistanceToNow(new Date(participant.joined_at), {
+          addSuffix: true,
+        })}
+      </p>
+    </div>
+  </div>
 ));
 
-// Main RoomChat component
+// Main RoomChat Component
 export default function RoomChat({ room }) {
   const [participants, setParticipants] = useState([]);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [showParticipants, setShowParticipants] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isTyping, setIsTyping] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState("");
 
   const supabase = createClient();
   const router = useRouter();
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
-  const scrollAreaRef = useRef(null);
 
-  // Memoize filtered participants
-  const filteredParticipants = useMemo(() =>
-      participants.filter((participant) =>
-        participant.user_id.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    [participants, searchQuery]
-  );
+  // Scroll to bottom
+  const scrollToBottom = useCallback((behavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
 
-  // Virtualized messages list
-  const messageVirtualizer = useVirtualizer({
-    count: messages.length,
-    getScrollElement: () => scrollAreaRef.current,
-    estimateSize: () => 80,
-    overscan: 10,
-  });
-
-  // Room expiration timer
+  // Update timer for room expiration
   useEffect(() => {
     if (!room.expires_at) return;
 
@@ -163,40 +142,14 @@ export default function RoomChat({ room }) {
         setTimeRemaining(formatDistance(expiresAt, now, { addSuffix: true }));
       } else {
         setTimeRemaining("Expired");
-        router.push("/rooms"); // Auto redirect if room expired
+        router.push("/rooms");
       }
     };
 
     updateTimeRemaining();
     const timer = setInterval(updateTimeRemaining, 60000);
     return () => clearInterval(timer);
-  }, [room.expires_at]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.ctrlKey && e.key === "p") {
-        e.preventDefault();
-        setShowParticipants((prev) => !prev);
-      }
-      if (e.ctrlKey && e.key === "j") {
-        e.preventDefault();
-        messageInputRef.current?.focus();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
-
-  // Message input with debounced typing indicator
-  const handleMessageChange = useCallback((e) => {
-    setNewMessage(e.target.value);
-    if (!isTyping) {
-      setIsTyping(true);
-      setTimeout(() => setIsTyping(false), 1000);
-    }
-  }, [isTyping]);
+  }, [room.expires_at, router]);
 
   // Initialize data and subscriptions
   useEffect(() => {
@@ -228,12 +181,12 @@ export default function RoomChat({ room }) {
         if (messagesData.error) throw messagesData.error;
         setMessages(messagesData.data);
 
-        setIsLoading(false);
+        setLoading(false);
         setTimeout(() => scrollToBottom("auto"), 100);
       } catch (error) {
         if (mounted) {
           setError(error.message);
-          setIsLoading(false);
+          setLoading(false);
           toast({
             title: "Error",
             description: "Failed to load chat data",
@@ -245,7 +198,7 @@ export default function RoomChat({ room }) {
 
     fetchInitialData();
 
-    // Realtime subscriptions
+    // Subscribe to room updates
     const participantsSubscription = supabase
       .channel("room_participants")
       .on(
@@ -274,6 +227,7 @@ export default function RoomChat({ room }) {
       )
       .subscribe();
 
+    // Subscribe to messages
     const messagesSubscription = supabase
       .channel("room_messages")
       .on(
@@ -296,8 +250,9 @@ export default function RoomChat({ room }) {
       supabase.removeChannel(participantsSubscription);
       supabase.removeChannel(messagesSubscription);
     };
-  }, [room.id]);
+  }, [room.id, scrollToBottom]);
 
+  // Message handlers
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !currentUser) return;
@@ -321,6 +276,7 @@ export default function RoomChat({ room }) {
     }
   };
 
+  // Room actions
   const handleLeaveRoom = async () => {
     if (!currentUser) return;
 
@@ -334,7 +290,6 @@ export default function RoomChat({ room }) {
       if (error) throw error;
 
       toast({
-        title: "Success",
         description: "Left room successfully",
       });
       router.push("/rooms");
@@ -371,56 +326,31 @@ export default function RoomChat({ room }) {
     }
   };
 
-  const scrollToBottom = useCallback((behavior = "smooth") => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
-  }, []);
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center text-destructive">
+        <AlertCircle className="h-8 w-8 mr-2" />
+        <p>Failed to load chat</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Participants Sidebar */}
-      <div
-        className={`${
-          showParticipants ? "w-80" : "w-0"
-        } transition-all duration-300 overflow-hidden border-r border-border bg-card`}
-      >
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Participants</h2>
-            <Badge variant="secondary">
-              {participants.length}
-            </Badge>
-          </div>
-
-          <div className="relative">
-            <Input
-              className="pl-10 bg-background"
-              placeholder="Search participants..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search participants"
-            />
-          </div>
-
-          <ScrollArea className="h-[calc(100vh-12rem)]">
-            <div className="space-y-2">
-              {filteredParticipants.map((participant) => (
-                <ParticipantCard
-                  key={participant.user_id}
-                  participant={participant}
-                  isCreator={participant.user_id === room.created_by}
-                />
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-      </div>
-
+    <div className="flex h-full bg-background">
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col max-w-full">
+      <div className="flex-1 flex flex-col">
         {/* Chat Header */}
-        <header className="px-6 py-4 border-b border-border bg-card">
+        <header className="px-6 py-4 border-b bg-card/50 backdrop-blur-sm supports-[backdrop-filter]:bg-card/30">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-4">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -428,16 +358,18 @@ export default function RoomChat({ room }) {
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowParticipants(!showParticipants)}
+                      className="shrink-0"
                     >
                       {showParticipants ? (
                         <EyeOff className="h-5 w-5" />
                       ) : (
                         <Eye className="h-5 w-5" />
                       )}
+                      <span className="sr-only">Toggle participants</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Toggle participants panel (Ctrl + P)</p>
+                    <p>Toggle participants panel</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -445,20 +377,28 @@ export default function RoomChat({ room }) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-semibold">{room.name}</h1>
-                  {room.type === 'private' && (
-                    <Badge variant="outline" className="text-destructive bg-destructive/10">
-                      Private
-                    </Badge>
+                  {room.type === 'private' ? (
+                    <Lock className="h-4 w-4 text-destructive/70" />
+                  ) : (
+                    <Globe className="h-4 w-4 text-primary/60" />
                   )}
                 </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Users className="h-4 w-4 mr-1" />
-                  {participants.length} participants
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="flex items-center">
+                    <Users className="h-4 w-4 mr-1" />
+                    {participants.length} participants
+                  </span>
+                  {room.expires_at && (
+                    <span className="flex items-center">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {timeRemaining}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -496,101 +436,64 @@ export default function RoomChat({ room }) {
               )}
             </div>
           </div>
-          {room.expires_at && (
-            <div className="mt-2 flex items-center text-sm text-muted-foreground">
-              <Clock className="h-4 w-4 mr-1" />
-              {timeRemaining ? `Expires ${timeRemaining}` : 'No expiration set'}
-            </div>
-          )}
         </header>
 
         {/* Messages Area */}
-        <ScrollArea
-          className="flex-1 p-6"
-          ref={scrollAreaRef}
-          onScroll={(e) => {
-            const bottom = e.currentTarget.scrollHeight - e.currentTarget.scrollTop === e.currentTarget.clientHeight;
-            if (bottom) {
-              messageVirtualizer.scrollToIndex(messages.length - 1);
-            }
-          }}
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : error ? (
-            <div className="flex items-center justify-center h-full text-destructive">
-              <AlertCircle className="h-8 w-8 mr-2" />
-              <p>Failed to load messages</p>
-            </div>
-          ) : (
-            <div
-              style={{
-                height: `${messageVirtualizer.getTotalSize()}px`,
-                width: '100%',
-                position: 'relative',
-              }}
-            >
-              {messageVirtualizer.getVirtualItems().map((virtualRow) => {
-                const message = messages[virtualRow.index];
-                const isFirstInDay = virtualRow.index === 0 ||
-                  new Date(message.created_at).toLocaleDateString() !==
-                  new Date(messages[virtualRow.index - 1].created_at).toLocaleDateString();
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-4">
+            {messages.map((message, index) => {
+              const prevMessage = messages[index - 1];
+              const showAvatar = !prevMessage ||
+                prevMessage.user_id !== message.user_id ||
+                new Date(message.created_at).getTime() - new Date(prevMessage.created_at).getTime() > 300000;
 
-                return (
-                  <div
-                    key={virtualRow.key}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    {isFirstInDay && (
-                      <div className="flex items-center space-x-4 my-4">
-                        <Separator className="flex-1" />
-                        <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded-full">
-                          {new Date(message.created_at).toLocaleDateString()}
-                        </span>
-                        <Separator className="flex-1" />
-                      </div>
-                    )}
-                    <ChatMessage
-                      message={message}
-                      currentUser={currentUser}
-                      isLastMessage={virtualRow.index === messages.length - 1}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          )}
+              const showDate = !prevMessage ||
+                new Date(message.created_at).toLocaleDateString() !==
+                new Date(prevMessage.created_at).toLocaleDateString();
+
+              return (
+                <div key={message.id}>
+                  {showDate && (
+                    <div className="flex items-center my-6">
+                      <Separator className="flex-1" />
+                      <span className="mx-4 text-xs text-muted-foreground px-2 py-1 rounded-full bg-muted">
+                        {new Date(message.created_at).toLocaleDateString()}
+                      </span>
+                      <Separator className="flex-1" />
+                    </div>
+                  )}
+                  <Message
+                    message={message}
+                    currentUser={currentUser}
+                    showAvatar={showAvatar}
+                  />
+                </div>
+              );
+            })}
+          </div>
           <div ref={messagesEndRef} />
         </ScrollArea>
 
         {/* Message Input */}
-        <div className="p-4 border-t border-border bg-card">
+        <div className="p-4 border-t bg-card/50 backdrop-blur-sm">
           <form
             onSubmit={handleSendMessage}
-            className="flex items-center space-x-2"
+            className="flex items-center gap-2"
           >
             <Input
               ref={messageInputRef}
               value={newMessage}
-              onChange={handleMessageChange}
-              placeholder="Type your message... (Ctrl + J to focus)"
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type your message..."
               className="flex-1"
-              aria-label="Message input"
+              autoComplete="off"
+              disabled={!currentUser}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSendMessage(e);
                 }
               }}
-              disabled={!currentUser}
             />
             <TooltipProvider>
               <Tooltip>
@@ -601,6 +504,7 @@ export default function RoomChat({ room }) {
                     disabled={!newMessage.trim() || !currentUser}
                   >
                     <Send className="h-5 w-5" />
+                    <span className="sr-only">Send message</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -609,11 +513,42 @@ export default function RoomChat({ room }) {
               </Tooltip>
             </TooltipProvider>
           </form>
-          {isTyping && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Someone is typing...
-            </p>
-          )}
+        </div>
+      </div>
+
+      {/* Participants Sidebar */}
+      <div
+        className={`${
+          showParticipants ? "w-80" : "w-0"
+        } transition-all duration-300 overflow-hidden border-l bg-card/50 backdrop-blur-sm`}
+      >
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Participants</h2>
+            <Badge variant="secondary" className="h-6">
+              <Users className="h-3 w-3 mr-1" />
+              {participants.length}
+            </Badge>
+          </div>
+
+          <ScrollArea className="h-[calc(100vh-8rem)]">
+            <div className="space-y-1">
+              {/* Show owner first */}
+              {participants
+                .sort((a, b) => {
+                  if (a.user_id === room.created_by) return -1;
+                  if (b.user_id === room.created_by) return 1;
+                  return 0;
+                })
+                .map((participant) => (
+                  <ParticipantCard
+                    key={participant.user_id}
+                    participant={participant}
+                    isCreator={participant.user_id === room.created_by}
+                  />
+                ))}
+            </div>
+          </ScrollArea>
         </div>
       </div>
     </div>

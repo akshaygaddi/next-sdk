@@ -247,14 +247,11 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
                   key={room.id}
                   room={room}
                   currentUserId={currentUserId}
-                  hasJoined={joinedRooms.includes(room.id)}
-                  isSelected={selectedRoom?.id === room.id}
                   onSelect={onRoomSelect}
                   onJoin={handleJoinRoom}
                   onLeave={handleLeaveRoom}
                   onTerminate={handleTerminateRoom}
-                  isMobile={isMobile}
-                  onClose={onClose}
+
                 />
               ))
             ) : (
