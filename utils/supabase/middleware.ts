@@ -47,8 +47,15 @@ export async function updateSession(request: NextRequest) {
     const isAuthPage = ["/auth/login", "/auth/signup", "/error"].some((path) =>
       request.nextUrl.pathname.startsWith(path),
     );
+
+    const publicPaths = ['/home', '/public'];
+
+    const isPublicPath = publicPaths.some((path) =>
+      request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path)
+    );
+
     const isProtectedPage =
-      !isAuthPage && !request.nextUrl.pathname.startsWith("/public");
+      !isAuthPage && !isPublicPath
 
     // Redirect logic
     if (!user && isProtectedPage) {

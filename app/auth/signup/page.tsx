@@ -1,134 +1,253 @@
-import { signup } from "./actions";
-import { Mail, Lock, ArrowRight, User } from "lucide-react";
+'use client'
+import React, { useTransition, useState, useEffect } from 'react';
+import { Mail, Lock, ArrowRight, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { signup } from "./actions";
 import Link from "next/link";
 
-export default function SignupPage() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800 p-4">
-      <Card className="w-full max-w-md relative overflow-hidden">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-yellow-500/10 rounded-2xl animate-gradient-x"></div>
+const SignupPage = () => {
+  const [isPending, startTransition] = useTransition();
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [shake, setShake] = useState(false);
 
-        <div className="relative">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
-              <div className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                Create Account
-              </div>
-            </CardTitle>
-            <p className="text-center text-muted-foreground">
+  // Handle form submission
+  const handleSubmit = async (formData: FormData) => {
+    setError(null);
+
+    startTransition(async () => {
+      try {
+        const result = await signup(formData);
+        if (result?.error) {
+          setError(
+            result.error === 'Email already registered'
+              ? 'This email is already registered. Please try signing in instead.'
+              : result.error
+          );
+          setShake(true);
+        }
+      } catch (e) {
+        // Only set error if it's not a redirect
+        if (!e.toString().includes('NEXT_REDIRECT')) {
+          setError('An unexpected error occurred. Please try again.');
+          setShake(true);
+        }
+      }
+    });
+  };
+
+  // Reset shake animation
+  useEffect(() => {
+    if (shake) {
+      const timer = setTimeout(() => setShake(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [shake]);
+
+  // Handle Enter key
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const form = e.target.closest('form');
+      if (form) form.requestSubmit();
+    }
+  };
+
+  return (
+    <div className="-mt-24 pt-24 min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-orange-50 dark:from-gray-900 dark:to-gray-800 p-4">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 opacity-20 dark:opacity-10">
+          {[...Array(15)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-pulse"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: `${Math.random() * 3 + 1}rem`,
+                height: `${Math.random() * 3 + 1}rem`,
+                backgroundColor: '#f97316',
+                borderRadius: '50%',
+                filter: 'blur(50px)',
+                animation: `pulse ${Math.random() * 3 + 2}s infinite`
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Signup Form Container */}
+      <div className="w-full max-w-md">
+        <div
+          className={`relative backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 rounded-2xl shadow-xl overflow-hidden border border-gray-200/20 dark:border-gray-700/20 transition-transform ${
+            shake ? 'animate-shake' : ''
+          }`}
+        >
+          {/* Form Header */}
+          <div className="px-8 pt-8 pb-6">
+            <h2 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+              Create Account
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 text-center">
               Enter your details to start your journey
             </p>
-          </CardHeader>
+          </div>
 
-          <CardContent>
-            <form className="space-y-4">
-              {/* Username Input */}
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-foreground">Username</Label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                  <div className="relative">
-                    <User
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                      size={18}
-                    />
-                    <Input
-                      id="username"
-                      name="username"
-                      type="text"
-                      placeholder="johndoe"
-                      required
-                      className="pl-10 bg-background border-border focus:ring-orange-500 focus:border-orange-500 transition-all duration-300"
-                    />
-                  </div>
+          {/* Error Alert */}
+          {error && (
+            <div className="px-8 mb-4">
+              <Alert variant="destructive" className="bg-destructive/10 border-none">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          {/* Form Content */}
+          <form className="px-8 pb-8 space-y-6" action={handleSubmit}>
+            {/* Username Field */}
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-gray-700 dark:text-gray-300">
+                Username
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
                 </div>
+                <Input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  disabled={isPending}
+                  placeholder="johndoe"
+                  onKeyPress={handleKeyPress}
+                  className="block w-full pl-10 pr-3 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl
+                           bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm
+                           text-gray-900 dark:text-white placeholder-gray-400
+                           focus:outline-none focus:border-orange-500 dark:focus:border-orange-500
+                           transition duration-200
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+                />
               </div>
+            </div>
 
-              {/* Email Input */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground">Email</Label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                  <div className="relative">
-                    <Mail
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                      size={18}
-                    />
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="john@example.com"
-                      required
-                      className="pl-10 bg-background border-border focus:ring-orange-500 focus:border-orange-500 transition-all duration-300"
-                    />
-                  </div>
+            {/* Email Field */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
+                Email
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
                 </div>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  disabled={isPending}
+                  placeholder="john@example.com"
+                  onKeyPress={handleKeyPress}
+                  className="block w-full pl-10 pr-3 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl
+                           bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm
+                           text-gray-900 dark:text-white placeholder-gray-400
+                           focus:outline-none focus:border-orange-500 dark:focus:border-orange-500
+                           transition duration-200
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+                />
               </div>
+            </div>
 
-              {/* Password Input */}
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground">Password</Label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                  <div className="relative">
-                    <Lock
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                      size={18}
-                    />
-                    <Input
-                      id="password"
-                      name="password"
-                      type="password"
-                      required
-                      className="pl-10 bg-background border-border focus:ring-orange-500 focus:border-orange-500 transition-all duration-300"
-                    />
-                  </div>
+            {/* Password Field */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
+                Password
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
                 </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition-all duration-300"></div>
-                <Button
-                  className="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium transition-all duration-300"
-                  formAction={signup}
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  disabled={isPending}
+                  placeholder="••••••••"
+                  onKeyPress={handleKeyPress}
+                  className="block w-full pl-10 pr-10 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl
+                           bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm
+                           text-gray-900 dark:text-white placeholder-gray-400
+                           focus:outline-none focus:border-orange-500 dark:focus:border-orange-500
+                           transition duration-200
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Account
-                  <ArrowRight className="ml-2" size={18} />
-                </Button>
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
-            </form>
-          </CardContent>
+            </div>
 
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link
-                href="/auth/login"
-                className="font-medium text-orange-500 hover:text-amber-500 transition-colors"
+            {/* Submit Button */}
+            <div className="pt-2">
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500
+                         hover:from-orange-600 hover:to-amber-600 text-white font-medium rounded-xl
+                         focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
+                         transform transition-all duration-200 flex items-center justify-center gap-2
+                         disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </div>
+                {isPending ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Create Account</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </Button>
+            </div>
 
-        {/* Decorative corner gradients */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/20 to-transparent rounded-bl-full"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-orange-500/20 to-transparent rounded-tr-full"></div>
-      </Card>
+            {/* Sign In Link */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Already have an account?{' '}
+                <Link
+                  href="/auth/login"
+                  className="text-orange-500 hover:text-orange-600 font-medium transition-colors"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </form>
+
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/20 to-transparent rounded-bl-full"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-orange-500/20 to-transparent rounded-tr-full"></div>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default SignupPage;

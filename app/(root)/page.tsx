@@ -1,201 +1,257 @@
 'use client'
-import React, { useCallback, useEffect, useState } from "react";
+
+
+
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
-  Users, MessageSquare, Code, Link, PieChart,
-  Mic, Timer, Sparkles, ArrowRight, CheckCircle
+  Users, Shield, Brain, Rocket, MessageSquare, Trophy,
+  Share2, BookOpen, ChevronRight, ArrowRight, Globe,
+  Code, Lock, Zap, GitBranch, Layout, Video, FileText
 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
 
-
-export default function LandingPage() {
+const LandingPage = () => {
   const [activeFeature, setActiveFeature] = useState(0);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = useCallback((e) => {
-    const { clientX, clientY } = e;
-
-    // Smooth cursor following
-    setCursorPosition({
-      x: clientX,
-      y: clientY
-    });
-
-    // Parallax effect
-    setMousePosition({
-      x: (clientX / window.innerWidth - 0.5) * 30,
-      y: (clientY / window.innerHeight - 0.5) * 30
-    });
-  }, []);
+  const [isVisible, setIsVisible] = useState(false);
+  const [waitlistCount, setWaitlistCount] = useState(482);
 
   useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [handleMouseMove]);
+    setIsVisible(true);
+  }, []);
 
   const roomFeatures = [
     {
-      icon: Code,
-      title: "Smart Code Sharing",
-      description: "Beautiful syntax highlighting and automatic code formatting for seamless technical discussions"
+      icon: <Code className="w-8 h-8" />,
+      title: "Smart Code Handling",
+      description: "Automatic syntax highlighting, code formatting, and language detection. Share and discuss code effortlessly."
     },
     {
-      icon: Link,
-      title: "Rich Link Previews",
-      description: "Links transform into informative previews, keeping discussions focused and contextual"
+      icon: <GitBranch className="w-8 h-8" />,
+      title: "GitHub Integration",
+      description: "Direct GitHub links transform into rich previews. Discuss PRs and issues seamlessly."
     },
     {
-      icon: PieChart,
-      title: "Instant Polls",
-      description: "Create quick polls for group decisions and get immediate community feedback"
+      icon: <Layout className="w-8 h-8" />,
+      title: "Rich Media Support",
+      description: "Links automatically expand into rich previews. Share content without leaving the discussion."
     },
     {
-      icon: Timer,
-      title: "Timed Discussions",
-      description: "Set time limits to keep conversations focused and productive"
+      icon: <Video className="w-8 h-8" />,
+      title: "Quick Polls & Voting",
+      description: "Create instant polls for group decisions. Get real-time feedback from your community."
     },
     {
-      icon: Mic,
-      title: "Voice Notes",
-      description: "Add a personal touch with quick voice messages and audio sharing"
+      icon: <FileText className="w-8 h-8" />,
+      title: "Document Collaboration",
+      description: "Real-time collaborative editing. Perfect for documentation and shared notes."
+    },
+    {
+      icon: <MessageSquare className="w-8 h-8" />,
+      title: "Focused Discussions",
+      description: "Threaded conversations keep topics organized. Set time limits for focused sessions."
+    }
+  ];
+
+  const upcomingFeatures = [
+    {
+      icon: <Trophy className="w-12 h-12" />,
+      title: "Battle Arena",
+      description: "Structure debates with team-based discussions. Real-time consensus tracking and visual engagement metrics.",
+      comingSoon: "Transform how your community compares ideas and reaches decisions."
+    },
+    {
+      icon: <Brain className="w-12 h-12" />,
+      title: "Truth & Trust System",
+      description: "Community-driven knowledge validation with expert verification. Build reliable information ecosystems.",
+      comingSoon: "Create a trusted knowledge base within your community."
+    },
+    {
+      icon: <Share2 className="w-12 h-12" />,
+      title: "Knowledge Validation",
+      description: "Fact-checking system with evidence-backed claims. Community voting on most convincing arguments.",
+      comingSoon: "Ensure quality information flows through your community."
     }
   ];
 
   return (
-    <div className="-mt-24 pt-24 min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="-mt-24 pt-24 min-h-screen bg-gradient-to-br from-gray-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-orange-500/20 via-amber-500/10 to-transparent rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-amber-500/20 via-orange-500/10 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        </div>
-
-        <div className="relative container mx-auto px-4 py-24">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="flex items-center justify-center gap-4 mb-8">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl blur-lg opacity-50"></div>
-                <div className="relative bg-gradient-to-r from-orange-500 to-amber-500 p-4 rounded-2xl text-white">
-                  <MessageSquare className="w-8 h-8" />
-                </div>
-              </div>
-            </div>
-
-            <h1 className="text-5xl md:text-7xl font-bold mb-8">
-              <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-                Redefining Digital
-              </span>
+      <section className="relative min-h-screen overflow-hidden">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+              Where Communities
               <br />
-              <span className="text-gray-800 dark:text-gray-200">
-                Conversations
-              </span>
+              Come Alive
             </h1>
-
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-2xl mx-auto">
-              Experience the future of online discussions with our feature-rich Rooms.
-              Connect, share, and engage in meaningful conversations like never before.
+            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">
+              Experience our revolutionary Rooms feature today, while we build the future of
+              community engagement.
             </p>
 
-            <div className="flex items-center justify-center gap-6">
-              <Button
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-8 py-6 text-lg rounded-xl"
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 flex items-center justify-center gap-2 mx-auto"
+            >
+              Get Early Access
+              <ArrowRight className="w-5 h-5" />
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Live Rooms Features */}
+      <section className="py-20 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+              Rooms: Available Now
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Experience our feature-rich Rooms today. Built for developers, teams, and communities
+              who need more than just chat.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {roomFeatures.map((feature, index) => (
+              <motion.div
+                key={index}
+                whileHover={{ scale: 1.02 }}
+                className="p-6 rounded-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-gray-200/20 dark:border-gray-700/20 shadow-lg"
               >
-                Join a Room
-                <ArrowRight className="ml-2" />
-              </Button>
-              <Button
-                variant="outline"
-                className="px-8 py-6 text-lg rounded-xl border-2 hover:bg-orange-500/10"
-              >
-                Learn More
-              </Button>
-            </div>
+                <div className="bg-gradient-to-br from-orange-500/20 to-amber-500/20 p-3 rounded-lg inline-block mb-4">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {feature.description}
+                </p>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Rooms Feature Showcase */}
-      <div className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-              Smart Rooms
-            </span>
-            <span className="text-gray-800 dark:text-gray-200"> in Action</span>
-          </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Discover our innovative features that make online discussions more engaging and productive
-          </p>
-        </div>
+      {/* Beta Testing Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-gray-800 dark:text-gray-100">
+              Help Shape the Future
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300">
+              As a beta tester, your feedback will directly influence our platform's evolution.
+              Experience our Rooms feature today and help us build the next generation of
+              community features.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {roomFeatures.map((feature, index) => (
-            <div
-              key={index}
-              className="relative group p-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:transform hover:scale-105"
-              onMouseEnter={() => setActiveFeature(index)}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative">
-                <feature.icon className="w-12 h-12 text-orange-500 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">{feature.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400">{feature.description}</p>
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl p-8 mb-16">
+            <h3 className="text-2xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-100">
+              Beta Tester Benefits
+            </h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="flex items-start gap-4">
+                <Rocket className="w-6 h-6 text-orange-500 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-medium text-gray-800 dark:text-gray-100 mb-2">Early Access to Features</h4>
+                  <p className="text-gray-600 dark:text-gray-300">Be the first to try new features and shape their development</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Coming Soon Section */}
-      <div className="container mx-auto px-4 py-24">
-        <div className="relative bg-gradient-to-r from-orange-500/10 to-amber-500/10 rounded-3xl p-12 overflow-hidden">
-          <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm"></div>
-
-          <div className="relative flex flex-col md:flex-row items-center gap-12">
-            <div className="flex-1">
-              <div className="inline-flex items-center bg-orange-500/20 text-orange-600 dark:text-orange-400 px-4 py-2 rounded-full text-sm font-medium mb-6">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Coming Soon
-              </div>
-
-              <h2 className="text-3xl md:text-5xl font-bold mb-6">
-                <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-                  Communities
-                </span>
-                <br />
-                <span className="text-gray-800 dark:text-gray-200">
-                  Are Coming
-                </span>
-              </h2>
-
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-                Get ready for a revolutionary community experience with interactive battles,
-                trust-based validation, and evidence-backed discussions.
-              </p>
-
-              <div className="space-y-4">
-                {['Battle Arena', 'Truth & Trust System', 'Fact Check Revolution'].map((feature, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <CheckCircle className="w-6 h-6 text-orange-500" />
-                    <span className="text-gray-700 dark:text-gray-300">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex-1 flex justify-center">
-              <div className="relative w-72 h-72">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-                <div className="relative w-full h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full p-0.5">
-                  <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center">
-                    <Users className="w-32 h-32 text-orange-500" />
-                  </div>
+              <div className="flex items-start gap-4">
+                <Users className="w-6 h-6 text-orange-500 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-medium text-gray-800 dark:text-gray-100 mb-2">Direct Impact</h4>
+                  <p className="text-gray-600 dark:text-gray-300">Your feedback directly influences feature development</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Coming Soon Features */}
+      <section className="py-20 bg-gradient-to-br from-orange-500/10 to-amber-500/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-gray-800 dark:text-gray-100">
+              What You're Waiting For
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Our upcoming features will revolutionize how communities interact, share knowledge,
+              and reach consensus.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {upcomingFeatures.map((feature, index) => (
+              <motion.div
+                key={index}
+                whileHover={{ scale: 1.05 }}
+                className="p-8 rounded-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-gray-200/20 dark:border-gray-700/20 shadow-xl"
+              >
+                <div className="bg-gradient-to-br from-orange-500/20 to-amber-500/20 p-4 rounded-xl inline-block mb-6">
+                  {feature.icon}
+                </div>
+                <h3 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  {feature.description}
+                </p>
+                <p className="text-sm text-orange-500 font-medium">
+                  {feature.comingSoon}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <h2 className="text-3xl md:text-5xl font-bold mb-8 text-gray-800 dark:text-gray-100">
+                Join the Evolution
+              </h2>
+              <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
+                Start with our powerful Rooms feature today, and be first in line for our
+                upcoming community innovations.
+              </p>
+              <div className="flex flex-col items-center space-y-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 flex items-center gap-2"
+                >
+                  Request Early Access
+                  <ChevronRight className="w-5 h-5" />
+                </motion.button>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Join {waitlistCount.toLocaleString()} others waiting for access
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
     </div>
   );
-}
+};
+
+export default LandingPage;

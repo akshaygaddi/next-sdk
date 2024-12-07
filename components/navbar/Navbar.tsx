@@ -1,18 +1,22 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Home, Users, DoorOpen, User2, Settings, Bell, LogOut, Menu, Sun, Moon } from 'lucide-react';
+import React, { useState, useEffect, startTransition } from "react";
+import { Home, Users, DoorOpen, User2, Settings, Bell, LogOut, Menu, Sun, Moon, Target } from "lucide-react";
 import { useTheme } from 'next-themes';
 import { redirect, usePathname, useRouter } from "next/navigation";
 import Link from 'next/link';
 import { toast } from "@/hooks/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { revalidatePath } from "next/cache";
+import { NextResponse } from "next/server";
+import { logout } from "@/app/auth/signout/action";
+
 
 const MENU_ITEMS = [
   { id: 'home', name: 'Home', icon: Home, path: '/' },
   { id: 'community', name: 'Community', icon: Users, path: '/community' },
-  { id: 'rooms', name: 'Rooms', icon: DoorOpen, path: '/rooms' }
+  { id: 'rooms', name: 'Rooms', icon: DoorOpen, path: '/rooms' },
+  { id: 'about', name: 'About Us', icon: Target, path: '/about' }
 ];
 
 const PROFILE_MENU_ITEMS = [
@@ -26,7 +30,7 @@ interface ProfileMenuProps {
   isOpen: boolean;
   onToggle: (isOpen: boolean) => void;
   user: User | null;
-  onSignOut: () => Promise<void>;
+  handleSignOut: () => Promise<void>;
 }
 
 const Logo = () => (
@@ -123,8 +127,9 @@ const ThemeToggle = () => {
   );
 };
 
-const ProfileMenu = ({ isOpen, onToggle, user, onSignOut }: ProfileMenuProps) => {
+const ProfileMenu = ({ isOpen, onToggle, user, handleSignOut }: ProfileMenuProps) => {
   const [isClosing, setIsClosing] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
 
   const handleClose = () => {
@@ -135,27 +140,21 @@ const ProfileMenu = ({ isOpen, onToggle, user, onSignOut }: ProfileMenuProps) =>
     }, 200);
   };
 
-const handleMenuItemClick = async (item: { id: string; path?: string }) => {
-  if (item.id === 'logout') {
-    try {
-      await onSignOut();
-      router.push('/login');
-      toast({
-        title: "Logged out successfully",
-        description: "Come back soon!",
-      });
-    } catch (error) {
-      toast({
-        title: "Error signing out",
-        description: "Please try again",
-        variant: "destructive",
-      });
+  const handleMenuItemClick = async (item: { id: string; path?: string }) => {
+    if (item.id === "logout") {
+      setIsLoggingOut(true);
+      try {
+        await handleSignOut();
+      } finally {
+        setIsLoggingOut(false);
+        handleClose();
+      }
+    } else if (item.path) {
+      router.push(item.path);
+      handleClose();
     }
-  } else if (item.path) {
-    router.push(item.path);
-  }
-  handleClose();
-};
+  };
+
 
 useEffect(() => {
   const handleClickOutside = (event: MouseEvent) => {
@@ -171,10 +170,12 @@ useEffect(() => {
 if (!isOpen) return null;
 
 return (
-  <div className={`profile-menu absolute right-0 mt-3 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-orange-100 dark:border-orange-900/30 overflow-hidden transform transition-all duration-200 ${
-    isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-  }`}>
-    <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-b border-orange-100 dark:border-orange-900/30">
+  <div
+    className={`profile-menu absolute right-0 mt-3 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-orange-100 dark:border-orange-900/30 overflow-hidden transform transition-all duration-200 ${
+      isClosing ? "opacity-0 scale-95" : "opacity-100 scale-100"
+    }`}>
+    <div
+      className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-b border-orange-100 dark:border-orange-900/30">
       <p className="text-sm text-gray-600 dark:text-gray-400">Signed in as</p>
       <p className="text-sm font-medium">{user?.user?.email}</p>
     </div>
@@ -190,39 +191,67 @@ return (
         </button>
       ))}
       <button
-        onClick={() => handleMenuItemClick({ id: 'logout' })}
-        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group"
+        onClick={() => handleMenuItemClick({ id: "logout" })}
+        disabled={isLoggingOut}
+        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-        <span className="font-medium">Logout</span>
+        {isLoggingOut ? (
+          <>
+            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+            <span className="font-medium">Signing out...</span>
+          </>
+        ) : (
+          <>
+            <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+            <span className="font-medium">Logout</span>
+          </>
+        )}
       </button>
     </div>
   </div>
 );
 };
+
 interface ElasticNavbarProps {
   user: User | null;
 }
 
 const ElasticNavbar = ({ user }) => {
-  const [activeNav, setActiveNav] = useState('home');
+  const [activeNav, setActiveNav] = useState("home");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const router = useRouter();
-  const supabase = createClient();
+
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      throw error;
-    }
-    revalidatePath("/home", "layout");
-    redirect("/home");
-  };
+    setIsLoggingOut(true);
+    try {
+      const result = await logout();
 
+      if (result.success) {
+        toast({
+          title: "Successfully logged out",
+          description: "Please Visit Again!",
+          variant: "default"
+        });
+        router.push("/home");
+      } else {
+        throw new Error("Logout failed");
+      }
+    } catch (error) {
+      toast({
+        title: "Error signing out",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -236,18 +265,20 @@ const ElasticNavbar = ({ user }) => {
       setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener('scroll', controlNavbar);
-    return () => window.removeEventListener('scroll', controlNavbar);
+    window.addEventListener("scroll", controlNavbar);
+    return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY]);
 
   if (!user.user) {
     return (
-      <nav className="fixed w-full top-0 z-50 px-4 py-3">
+      <nav className={`fixed w-full top-0 z-50 px-4 py-3 transition-transform duration-300 ${
+        isVisible ? "translate-y-0" : "-translate-y-full"
+      }`}>
         <div className="max-w-7xl mx-auto">
           <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-2xl shadow-lg">
             <div className="relative px-6 py-3">
               <div className="flex items-center justify-between">
-                <Logo />
+              <Logo />
                 <div className="flex items-center gap-6">
                   {/* Theme Toggle */}
                   <ThemeToggle />
@@ -354,8 +385,9 @@ const ElasticNavbar = ({ user }) => {
                     isOpen={isProfileOpen}
                     onToggle={setIsProfileOpen}
                     user={user}
-                    onSignOut={handleSignOut}
+                    handleSignOut={handleSignOut}
                   />
+
                 </div>
 
                 <button

@@ -6,28 +6,37 @@ import { revalidatePath } from "next/cache";
 export async function signup(formData: FormData) {
   const supabase = await createClient();
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
   const userData = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
   };
-  const { error } = await supabase.auth.signUp(userData);
 
+  const { error: signUpError } = await supabase.auth.signUp(userData);
+
+  if (signUpError) {
+    // Return error information instead of redirecting
+    return {
+      error: signUpError.message,
+      success: false
+    };
+  }
+
+  // If signup is successful, try to create the profile
   const profileData = {
     username: formData.get("username") as string,
   };
-  console.log(profileData);
 
-  // const profileError = await supabase
-  //     .from('profiles')
-  //     .insert({ id: 1, name: 'Denmark' })
-  //
-  // console.log(profileError);
+  // Here you can add profile data to your profiles table
+  // const { error: profileError } = await supabase
+  //   .from('profiles')
+  //   .insert([profileData]);
 
-  if (error) {
-    redirect("/error");
-  }
+  // if (profileError) {
+  //   return {
+  //     error: "Failed to create profile. Please try again.",
+  //     success: false
+  //   };
+  // }
 
   revalidatePath("/home", "layout");
   redirect("/home");
