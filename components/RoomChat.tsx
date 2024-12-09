@@ -21,7 +21,7 @@ import {
   AlertCircle,
   Crown,
   Lock,
-  Globe,
+  Globe, PanelLeftClose, PanelLeftOpen, Quote, Code, BarChart3, Link, Highlighter, MessageSquare, ImageIcon, Mic
 } from "lucide-react";
 import { formatDistanceToNow, formatDistance } from "date-fns";
 import { toast } from "@/hooks/use-toast";
@@ -31,51 +31,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import MessageInput from "@/components/MessageInput";
+import { Card } from "@/components/ui/card";
+import  Message  from "@/components/messageDisplay";
 
-// Message Component
-const Message = React.memo(({ message, currentUser, showAvatar = true }) => {
-  const isOwnMessage = message.user_id === currentUser?.id;
 
-  return (
-    <div
-      className={`flex items-end gap-2 ${
-        isOwnMessage ? "flex-row-reverse" : "flex-row"
-      }`}
-    >
-      {!isOwnMessage && showAvatar && (
-        <Avatar className="h-8 w-8">
-          <AvatarImage
-            src={`https://avatar.vercel.sh/${message.user_id}`}
-            alt={`${message.user_id}'s avatar`}
-          />
-          <AvatarFallback>
-            {message.user_id.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-      )}
-      {!isOwnMessage && !showAvatar && <div className="w-8" />}
-      <div
-        className={`group relative px-3 py-2 rounded-2xl max-w-[75%] break-words ${
-          isOwnMessage
-            ? "bg-primary text-primary-foreground rounded-tr-none"
-            : "bg-muted rounded-tl-none"
-        }`}
-      >
-        {!isOwnMessage && (
-          <p className="text-xs text-muted-foreground mb-1">
-            {message.user_id}
-          </p>
-        )}
-        <p className="text-sm">{message.content}</p>
-        <p className="text-[10px] mt-1 opacity-70">
-          {formatDistanceToNow(new Date(message.created_at), {
-            addSuffix: true,
-          })}
-        </p>
-      </div>
-    </div>
-  );
-});
+
 
 // Participant Card Component
 const ParticipantCard = React.memo(({ participant, isCreator }) => (
@@ -111,7 +72,7 @@ const ParticipantCard = React.memo(({ participant, isCreator }) => (
 ));
 
 // Main RoomChat Component
-export default function RoomChat({ room }) {
+export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
   const [participants, setParticipants] = useState([]);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -125,6 +86,20 @@ export default function RoomChat({ room }) {
   const router = useRouter();
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
+
+
+  // Load participants visibility from localStorage
+  useEffect(() => {
+    const savedParticipantsState = localStorage.getItem('showParticipants');
+    if (savedParticipantsState !== null) {
+      setShowParticipants(JSON.parse(savedParticipantsState));
+    }
+  }, []);
+
+  // Save participants visibility to localStorage
+  useEffect(() => {
+    localStorage.setItem('showParticipants', JSON.stringify(showParticipants));
+  }, [showParticipants]);
 
   // Scroll to bottom
   const scrollToBottom = useCallback((behavior = "smooth") => {
@@ -253,20 +228,18 @@ export default function RoomChat({ room }) {
   }, [room.id, scrollToBottom]);
 
   // Message handlers
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !currentUser) return;
-
+  const handleSendMessage = async (messageData) => {
     try {
+      const { type, content, ...rest } = messageData;
       const { error } = await supabase.from("messages").insert({
         room_id: room.id,
         user_id: currentUser.id,
-        content: newMessage.trim(),
-        type: "text",
+        content,
+        type,
+        metadata: rest, // Additional data like language, poll options, etc.
       });
 
       if (error) throw error;
-      setNewMessage("");
     } catch (error) {
       toast({
         title: "Error",
@@ -343,6 +316,8 @@ export default function RoomChat({ room }) {
     );
   }
 
+
+
   return (
     <div className="flex h-full bg-background">
       {/* Main Chat Area */}
@@ -351,28 +326,34 @@ export default function RoomChat({ room }) {
         <header className="px-6 py-4 border-b bg-card/50 backdrop-blur-sm supports-[backdrop-filter]:bg-card/30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              {/* Sidebar Toggle */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setShowParticipants(!showParticipants)}
+                      onClick={onToggleSidebar}
                       className="shrink-0"
                     >
-                      {showParticipants ? (
-                        <EyeOff className="h-5 w-5" />
+                      {showSidebar ? (
+                        <PanelLeftClose color="#F9802E" className="h-5 w-5 " />
                       ) : (
-                        <Eye className="h-5 w-5" />
+                        <PanelLeftOpen className="h-5 w-5" />
                       )}
-                      <span className="sr-only">Toggle participants</span>
+                      <span className="sr-only">
+                        {showSidebar ? 'Hide rooms sidebar' : 'Show rooms sidebar'}
+                      </span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Toggle participants panel</p>
+                    <p>{showSidebar ? 'Hide rooms sidebar' : 'Show rooms sidebar'}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+
+              {/* Participants Toggle */}
+
 
               <div>
                 <div className="flex items-center gap-2">
@@ -434,6 +415,31 @@ export default function RoomChat({ room }) {
                   </Tooltip>
                 </TooltipProvider>
               )}
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowParticipants(!showParticipants)}
+                      className="shrink-0"
+                    >
+                      {showParticipants ? (
+                        <EyeOff color='#F9802E' className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                      <span className="sr-only">
+                        {showParticipants ? 'Hide participants' : 'Show participants'}
+                      </span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{showParticipants ? 'Hide participants' : 'Show participants'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </header>
@@ -475,45 +481,10 @@ export default function RoomChat({ room }) {
         </ScrollArea>
 
         {/* Message Input */}
-        <div className="p-4 border-t bg-card/50 backdrop-blur-sm">
-          <form
-            onSubmit={handleSendMessage}
-            className="flex items-center gap-2"
-          >
-            <Input
-              ref={messageInputRef}
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1"
-              autoComplete="off"
-              disabled={!currentUser}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage(e);
-                }
-              }}
-            />
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="submit"
-                    size="icon"
-                    disabled={!newMessage.trim() || !currentUser}
-                  >
-                    <Send className="h-5 w-5" />
-                    <span className="sr-only">Send message</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Send message (Enter)</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </form>
-        </div>
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          defaultWidth="800px" // Optional custom width
+        />
       </div>
 
       {/* Participants Sidebar */}
