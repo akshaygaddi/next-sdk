@@ -13,7 +13,7 @@ import { logout } from "@/app/auth/signout/action";
 
 
 const MENU_ITEMS = [
-  { id: 'home', name: 'Home', icon: Home, path: '/' },
+  { id: 'home', name: 'Home', icon: Home, path: '/home' },
   { id: 'community', name: 'Community', icon: Users, path: '/community' },
   { id: 'rooms', name: 'Rooms', icon: DoorOpen, path: '/rooms' },
   { id: 'about', name: 'About Us', icon: Target, path: '/about' }
