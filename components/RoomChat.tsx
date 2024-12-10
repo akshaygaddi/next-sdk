@@ -71,6 +71,106 @@ const ParticipantCard = React.memo(({ participant, isCreator }) => (
   </div>
 ));
 
+
+const RoomHeader = ({
+                      room,
+                      participants,
+                      timeRemaining,
+                      showSidebar,
+                      showParticipants,
+                      currentUser,
+                      onToggleSidebar,
+                      setShowParticipants,
+                      handleLeaveRoom,
+                      handleTerminateRoom
+                    }) => {
+  const HeaderIcon = ({ icon: Icon, onClick, tooltip, color }) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClick}
+            className="h-8 w-8"
+          >
+            <Icon className="h-4 w-4" color={color} />
+            <span className="sr-only">{tooltip}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
+  return (
+    <header className="px-4 py-2 border-b bg-card/50 backdrop-blur-lg">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <HeaderIcon
+            icon={showSidebar ? PanelLeftClose : PanelLeftOpen}
+            onClick={onToggleSidebar}
+            tooltip={showSidebar ? 'Hide rooms sidebar' : 'Show rooms sidebar'}
+            color={showSidebar ? '#F9802E' : undefined}
+          />
+
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1 truncate">
+              <h1 className="text-base font-semibold truncate">{room.name}</h1>
+              {room.type === 'private' ? (
+                <Lock className="h-3 w-3 text-destructive/70 shrink-0" />
+              ) : (
+                <Globe className="h-3 w-3 text-primary/60 shrink-0" />
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {participants.length}
+              </span>
+              {room.expires_at && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {timeRemaining}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <HeaderIcon
+            icon={showParticipants ? EyeOff : Eye}
+            onClick={() => setShowParticipants(!showParticipants)}
+            tooltip={showParticipants ? 'Hide participants' : 'Show participants'}
+            color={showParticipants ? '#F9802E' : undefined}
+          />
+
+          <HeaderIcon
+            icon={ArrowLeftFromLine}
+            onClick={handleLeaveRoom}
+            tooltip="Leave room"
+          />
+
+          {currentUser?.id === room.created_by && (
+            <HeaderIcon
+              icon={Trash2}
+              onClick={handleTerminateRoom}
+              tooltip="Terminate room"
+              color="#EF4444"
+            />
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+
+
+
 // Main RoomChat Component
 export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
   const [participants, setParticipants] = useState([]);
@@ -322,127 +422,8 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
     <div className="flex h-full bg-background">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        {/* Chat Header */}
-        <header className="px-6 py-4 border-b bg-card/50 backdrop-blur-sm supports-[backdrop-filter]:bg-card/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Sidebar Toggle */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onToggleSidebar}
-                      className="shrink-0"
-                    >
-                      {showSidebar ? (
-                        <PanelLeftClose color="#F9802E" className="h-5 w-5 " />
-                      ) : (
-                        <PanelLeftOpen className="h-5 w-5" />
-                      )}
-                      <span className="sr-only">
-                        {showSidebar ? 'Hide rooms sidebar' : 'Show rooms sidebar'}
-                      </span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{showSidebar ? 'Hide rooms sidebar' : 'Show rooms sidebar'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+        <RoomHeader room={room} participants={participants} timeRemaining={timeRemaining} showSidebar={showSidebar} showParticipants={showParticipants} currentUser={currentUser} onToggleSidebar={onToggleSidebar} setShowParticipants={setShowParticipants} handleLeaveRoom={handleLeaveRoom} handleTerminateRoom={undefined}/>
 
-              {/* Participants Toggle */}
-
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-semibold">{room.name}</h1>
-                  {room.type === 'private' ? (
-                    <Lock className="h-4 w-4 text-destructive/70" />
-                  ) : (
-                    <Globe className="h-4 w-4 text-primary/60" />
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="flex items-center">
-                    <Users className="h-4 w-4 mr-1" />
-                    {participants.length} participants
-                  </span>
-                  {room.expires_at && (
-                    <span className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {timeRemaining}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleLeaveRoom}
-                    >
-                      <ArrowLeftFromLine className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Leave room</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {currentUser?.id === room.created_by && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleTerminateRoom}
-                      >
-                        <Trash2 className="h-5 w-5 text-destructive" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Terminate room</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowParticipants(!showParticipants)}
-                      className="shrink-0"
-                    >
-                      {showParticipants ? (
-                        <EyeOff color='#F9802E' className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                      <span className="sr-only">
-                        {showParticipants ? 'Hide participants' : 'Show participants'}
-                      </span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{showParticipants ? 'Hide participants' : 'Show participants'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-        </header>
 
         {/* Messages Area */}
         <ScrollArea className="flex-1 p-4">

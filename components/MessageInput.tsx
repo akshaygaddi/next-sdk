@@ -8,25 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import {
   Send, Code, MessageSquare, BarChart3,
   Plus, X, ChevronUp, ChevronDown,
-  Timer, Check, Image, Mic, Highlighter, Link, Quote, ChevronLeft, ChevronRight, Terminal
+  Timer, Check, Link, Quote,
+  AlertCircle, MessageCircle, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-type MessageType = 'text' | 'image' | 'voice' | 'code' | 'poll' | 'link' | 'quote' | 'highlight';
+type MessageType = 'text' | 'code' | 'poll' | 'link' | 'quote';
 
 interface Message {
   type: MessageType;
   content?: string;
-  imageFile?: File;
-  audioBlob?: Blob;
-  duration?: number;
   language?: string;
   question?: string;
   options?: string[];
   url?: string;
   title?: string;
   sourceText?: string;
-  highlightColor?: string;
   settings?: {
     duration: number | null;
     type: 'single' | 'multiple';
@@ -40,15 +36,13 @@ interface MessageInputProps {
   maxHeight?: number;
 }
 
-// Constants
-const MESSAGE_TYPES = {
-  TEXT: 'text',
-  CODE: 'code',
-  POLL: 'poll',
-  LINK: 'link',
-  QUOTE: 'quote',
-  HIGHLIGHT: 'highlight'
-} as const;
+const MESSAGE_TYPES = [
+  { id: 'text', icon: MessageSquare, label: 'Text', color: 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20' },
+  { id: 'code', icon: Code, label: 'Code', color: 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20' },
+  { id: 'poll', icon: BarChart3, label: 'Poll', color: 'bg-green-500/10 text-green-500 hover:bg-green-500/20' },
+  { id: 'link', icon: Link, label: 'Link', color: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20' },
+  { id: 'quote', icon: Quote, label: 'Quote', color: 'bg-pink-500/10 text-pink-500 hover:bg-pink-500/20' }
+];
 
 const LANGUAGES = [
   { value: 'javascript', label: 'JavaScript' },
@@ -64,13 +58,6 @@ const POLL_DURATIONS = [
   { value: '168', label: '1 week' }
 ];
 
-const HIGHLIGHT_COLORS = [
-  { value: 'yellow', label: 'Yellow', class: 'bg-yellow-200' },
-  { value: 'green', label: 'Green', class: 'bg-green-200' },
-  { value: 'blue', label: 'Blue', class: 'bg-blue-200' },
-  { value: 'purple', label: 'Purple', class: 'bg-purple-200' },
-];
-
 const MessageInput: React.FC<MessageInputProps> = ({
                                                      onSendMessage,
                                                      disabled = false,
@@ -78,11 +65,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
                                                      maxHeight = 300
                                                    }) => {
   const [messageType, setMessageType] = useState<MessageType>('text');
+  const [isExpanded, setIsExpanded] = useState(true);
   const [message, setMessage] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
   const [language, setLanguage] = useState('javascript');
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
@@ -91,33 +75,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [sourceText, setSourceText] = useState('');
-  const [highlightColor, setHighlightColor] = useState('yellow');
 
-
-
-
-  // message selctor
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isHovered, setIsHovered] = useState(null);
-
-  const messageTypes = [
-    { id: 'text', icon: MessageSquare, label: 'Text' },
-    // { id: 'image', icon: Image, label: 'Image' },
-    // { id: 'voice', icon: Mic, label: 'Voice' },
-    { id: 'code', icon: Code, label: 'Code' },
-    { id: 'poll', icon: BarChart3, label: 'Poll' },
-    { id: 'link', icon: Link, label: 'Link' },
-    { id: 'quote', icon: Quote, label: 'Quote' },
-    // { id: 'highlight', icon: Highlighter, label: 'Highlight' },
-  ];
-  // message selctor
-
-
-  // Refs
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-
-  // Auto-resize textarea with max height
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -126,99 +86,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [message, maxHeight]);
 
-
-  // image uploading and voice recording
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const durationIntervalRef = useRef<NodeJS.Timer>();
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setImageFile(file);
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        audioChunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-        if (durationIntervalRef.current) {
-          clearInterval(durationIntervalRef.current);
-        }
-      };
-
-      mediaRecorder.start(1000);
-      setIsRecording(true);
-      setRecordingDuration(0);
-
-      durationIntervalRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
-
-      // Auto-stop after 60 seconds
-      setTimeout(() => stopRecording(), 60000);
-    } catch (err) {
-      console.error('Failed to start recording:', err);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current?.state === 'recording') {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  // image uploading and voice recording
-
-  // Poll handlers
-  const handleAddOption = () => {
-    if (pollOptions.length < 10) {
-      setPollOptions([...pollOptions, '']);
-    }
-  };
-
-  const handleRemoveOption = (index: number) => {
-    if (pollOptions.length > 2) {
-      setPollOptions(pollOptions.filter((_, i) => i !== index));
-    }
-  };
-
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...pollOptions];
-    newOptions[index] = value;
-    setPollOptions(newOptions);
-  };
-
-  const moveOption = (index: number, direction: 'up' | 'down') => {
-    if ((direction === 'up' && index === 0) ||
-      (direction === 'down' && index === pollOptions.length - 1)) return;
-
-    const newOptions = [...pollOptions];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    [newOptions[index], newOptions[targetIndex]] = [newOptions[targetIndex], newOptions[index]];
-    setPollOptions(newOptions);
-  };
-
-
-
   const resetForm = () => {
     setMessage('');
-    setImageFile(null);
-    setAudioBlob(null);
-    setRecordingDuration(0);
     setPollQuestion('');
     setPollOptions(['', '']);
     setPollDuration('24');
@@ -226,7 +95,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     setUrl('');
     setTitle('');
     setSourceText('');
-    setHighlightColor('yellow');
+    setMessageType('text');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -240,24 +109,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
         case 'text':
           if (!message.trim()) return;
           messageToSend = { type: 'text', content: message };
-          break;
-
-        case 'image':
-          if (!imageFile) return;
-          messageToSend = {
-            type: 'image',
-            imageFile,
-            content: message
-          };
-          break;
-
-        case 'voice':
-          if (!audioBlob) return;
-          messageToSend = {
-            type: 'voice',
-            audioBlob,
-            duration: recordingDuration
-          };
           break;
 
         case 'code':
@@ -274,11 +125,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
           if (!pollQuestion.trim() || validOptions.length < 2) return;
           messageToSend = {
             type: 'poll',
-            content: pollQuestion, // Add this line to fix the error
+            content: pollQuestion,
             question: pollQuestion,
             options: validOptions,
             settings: {
-              duration: pollDuration ? parseInt(pollDuration) : null,
+              duration: parseInt(pollDuration),
               type: pollType
             }
           };
@@ -303,15 +154,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
           };
           break;
 
-        case 'highlight':
-          if (!message.trim()) return;
-          messageToSend = {
-            type: 'highlight',
-            content: message,
-            highlightColor
-          };
-          break;
-
         default:
           return;
       }
@@ -323,424 +165,116 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
-
-  useEffect(() => {
-    return () => {
-      if (durationIntervalRef.current) {
-        clearInterval(durationIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Keyboard handlers
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
-    }
+  const getCurrentIcon = () => {
+    const currentType = MESSAGE_TYPES.find(type => type.id === messageType);
+    return currentType?.icon || MessageSquare;
   };
 
-
-  return (
-    <div className={`sticky bottom-0 w-full p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${className}`}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-
-
-        {/*end*/}
-        {messageType === 'image' && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <Input
-                disabled={true}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="flex-1"
-              />
-              {imageFile && (
-                <Button
-                  disabled={true}
-                  // type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setImageFile(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            {imageFile && (
-              <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
-                <img
-                  src={URL.createObjectURL(imageFile)}
-                  alt="Preview"
-                  className="object-contain w-full h-full"
-                />
-              </div>
-            )}
-            {/*<Textarea*/}
-            {/*  value={message}*/}
-            {/*  onChange={(e) => setMessage(e.target.value)}*/}
-            {/*  placeholder="Due Limited storage Options we had to disable the image Option"*/}
-            {/*  className="resize-none"*/}
-            {/*/>*/}
-            <Alert>
-              <Terminal className="h-4 w-4 bg-red-400" />
-              <AlertTitle>Apology</AlertTitle>
-              <AlertDescription>
-                Due Limited storage Options we had to disable the image Option
-              </AlertDescription>
-            </Alert>
-
-            <div className="flex items-center gap-2">
-
-              <Button
-                type="reset"
-                className="ml-auto"
-                onClick={()=>{
-                  setMessageType('text')
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={!imageFile}
-              >
-                <Image className="h-4 w-4 mr-2" />
-                Send Image
-              </Button>
-
-            </div>
+  const renderMessageInput = () => {
+    switch (messageType) {
+      case 'text':
+        return (
+          <div className="flex items-end gap-2">
+            <Textarea
+              ref={textareaRef}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault(); // Prevent adding a new line
+                  handleSubmit(e); // Trigger form submission
+                }
+              }}
+              placeholder="Type your message..."
+              className="resize-none rounded-xl"
+              style={{ maxHeight: `${maxHeight}px` }}
+            />
+            <Button
+              type="submit"
+              disabled={!message.trim()}
+              size="icon"
+              className="h-10 w-10 rounded-xl bg-orange-500 text-white hover:bg-orange-300"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-        )}
+        );
 
-        {messageType === 'voice' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-center gap-4">
-              <Button
-                type="button"
-                variant={isRecording ? "destructive" : "secondary"}
-                size="lg"
-                className="w-24 h-24 rounded-full"
-                onClick={isRecording ? stopRecording : startRecording}
-              >
-                <Mic className={`h-8 w-8 ${isRecording ? 'animate-pulse' : ''}`} />
-
-              </Button>
-            </div>
-            {isRecording && (
-              <div className="text-center font-medium">
-                Recording... {recordingDuration}s
-              </div>
-            )}
-            {audioBlob && !isRecording && (
-              <div className="space-y-2">
-                <audio src={URL.createObjectURL(audioBlob)} controls className="w-full" />
-
-
-
-                <div className="flex items-center gap-2">
-
-                  <Button
-                    type="reset"
-                    className="ml-auto"
-                    onClick={() => {
-                      setMessageType("text");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    disabled={true}
-                    // type="submit"
-                    className="w-full"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Voice Message
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Text/Code Input */}
-        {(messageType === "text" || messageType === "code") && (
-          <div className="space-y-2">
-            {messageType === "code" && (
-              <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select Language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LANGUAGES.map(lang => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            <div className="flex gap-2">
-              <div className="flex items-center">
-                <div
-                  className={`flex items-center gap-1 bg-muted rounded-lg transition-all duration-300 ease-in-out ${
-                    isExpanded ? "w-auto p-2" : "w-fit"
-                  }`}
-                >
-                  {messageTypes.map((type) => {
-                    const Icon = type.icon;
-                    const isSelected = messageType === type.id;
-                    const showItem = isExpanded || isSelected;
-
-                    if (!showItem) return null;
-
-                    return (
-                      <div
-                        key={type.id}
-                        className={`relative flex items-center transition-all duration-200 ${
-                          isExpanded ? "mx-1" : "mx-0"
-                        }`}
-                        onMouseEnter={() => setIsHovered(type.id)}
-                        onMouseLeave={() => setIsHovered(null)}
-                      >
-                        <button
-                          onClick={() => {
-                            setMessageType(type.id);
-
-                          }}
-                          className={`relative flex items-center p-2 rounded-md transition-all duration-200 ${
-                            isSelected
-                              ? "bg-primary text-white"
-                              : "hover:bg-secondary/50"
-                          }`}
-                        >
-                          <Icon className="h-4 w-4" />
-                          {(isExpanded || isSelected) && (
-                            <span className={`ml-2 text-sm whitespace-nowrap ${
-                              isSelected ? "text-white" : ""
-                            }`}>
-                    {type.label}
-                  </span>
-                          )}
-                        </button>
-
-                        {!isExpanded && isHovered === type.id && !isSelected && (
-                          <div
-                            className="absolute left-full ml-2 px-2 py-1 bg-black/75 text-white text-xs rounded whitespace-nowrap">
-                            {type.label}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="ml-2 p-2 hover:bg-muted rounded-full transition-all duration-200"
-                >
-                  {isExpanded ? (
-                    <ChevronLeft className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
+      case 'code':
+        return (
+          <div className="space-y-3">
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className="w-48 rounded-xl">
+                <SelectValue placeholder="Select Language" />
+              </SelectTrigger>
+              <SelectContent>
+                {LANGUAGES.map(lang => (
+                  <SelectItem key={lang.value} value={lang.value}>
+                    {lang.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-end gap-2">
               <Textarea
                 ref={textareaRef}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder={messageType === "code" ? "Paste your code here..." : "Type a message..."}
-                className={`flex-1 resize-none ${messageType === "code" ? "font-mono bg-muted" : ""}`}
-                onKeyDown={handleKeyDown}
+                placeholder="Paste your code here..."
+                className="resize-none font-mono bg-muted rounded-xl"
                 style={{ maxHeight: `${maxHeight}px` }}
               />
               <Button
                 type="submit"
-                size="icon"
                 disabled={!message.trim()}
-                className="h-10 w-10"
+                size="icon"
+                className="h-10 w-10 rounded-xl bg-purple-500 text-white hover:bg-purple-600"
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
           </div>
-        )}
+        );
 
-        {/* Link Input */}
-        {messageType === "link" && (
-          <div className="space-y-2">
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter URL"
-              type="url"
-              required
-            />
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Link title (optional)"
-            />
-            <Textarea
-              ref={textareaRef}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Add a description (optional)"
-              className="resize-none"
-              style={{ maxHeight: `${maxHeight}px` }}
-            />
-            <div className="flex items-center gap-2">
-
-              <Button
-                variant="destructive"
-                type="reset"
-                className="ml-auto"
-                onClick={() => {
-                  setMessageType("text");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={!url.trim()}
-              >
-                <Link className="h-4 w-4 mr-2" />
-                Add Link
-              </Button>
-            </div>
-
-          </div>
-        )}
-
-        {/* Quote Input */}
-        {messageType === "quote" && (
-          <div className="space-y-2">
-            <Textarea
-              value={sourceText}
-              onChange={(e) => setSourceText(e.target.value)}
-              placeholder="Enter the text you want to quote"
-              className="resize-none font-medium"
-              style={{ maxHeight: `${maxHeight}px` }}
-            />
-            <Textarea
-              ref={textareaRef}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Add your thoughts (optional)"
-              className="resize-none"
-              style={{ maxHeight: `${maxHeight}px` }}
-            />
-            <div className="flex items-center gap-2">
-
-              <Button
-                variant="destructive"
-                type="reset"
-                className="ml-auto"
-                onClick={() => {
-                  setMessageType("text");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={!sourceText.trim()}
-              >
-                <Quote className="h-4 w-4 mr-2" />
-                Add Quote
-              </Button>
-            </div>
-
-          </div>
-        )}
-
-        {/* Highlight Input */}
-        {messageType === "highlight" && (
-          <div className="space-y-2">
-            <Select value={highlightColor} onValueChange={setHighlightColor}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Color" />
-              </SelectTrigger>
-              <SelectContent>
-                {HIGHLIGHT_COLORS.map(color => (
-                  <SelectItem
-                    key={color.value}
-                    value={color.value}
-                    className={color.class}
-                  >
-                    {color.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Textarea
-              ref={textareaRef}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Enter text to highlight"
-              className={`resize-none ${HIGHLIGHT_COLORS.find(c => c.value === highlightColor)?.class}`}
-              style={{ maxHeight: `${maxHeight}px` }}
-            />
-
-            <div className="flex items-center gap-2">
-
-              <Button
-                type="reset"
-                className="ml-auto"
-                onClick={() => {
-                  setMessageType("text");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={!message.trim()}
-              >
-                <Highlighter className="h-4 w-4 mr-2" />
-                Add Highlight
-              </Button>
-            </div>
-
-          </div>
-        )}
-
-        {/* Poll Creation */}
-        {messageType === "poll" && (
-          <div className="space-y-4">
+      case 'poll':
+        return (
+          <div className="space-y-3">
             <Input
               value={pollQuestion}
               onChange={(e) => setPollQuestion(e.target.value)}
               placeholder="What would you like to ask?"
-              className="font-medium"
+              className="font-medium rounded-xl"
             />
-
-            <Card className="p-4 space-y-2">
+            <Card className="p-3 space-y-2 bg-muted/50 rounded-xl border-0">
               {pollOptions.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <Badge variant="outline" className="h-6 w-6 shrink-0 flex items-center justify-center">
+                  <Badge variant="outline" className="h-6 w-6 shrink-0 flex items-center justify-center rounded-full">
                     {index + 1}
                   </Badge>
                   <Input
                     value={option}
-                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                    onChange={(e) => {
+                      const newOptions = [...pollOptions];
+                      newOptions[index] = e.target.value;
+                      setPollOptions(newOptions);
+                    }}
                     placeholder={`Option ${index + 1}`}
-                    className="flex-1"
+                    className="flex-1 rounded-xl"
                   />
                   <div className="flex gap-1">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => moveOption(index, 'up')}
+                      onClick={() => {
+                        const newOptions = [...pollOptions];
+                        if (index > 0) {
+                          [newOptions[index], newOptions[index - 1]] = [newOptions[index - 1], newOptions[index]];
+                          setPollOptions(newOptions);
+                        }
+                      }}
                       disabled={index === 0}
+                      className="h-8 w-8 rounded-lg"
                     >
                       <ChevronUp className="h-4 w-4" />
                     </Button>
@@ -748,8 +282,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => moveOption(index, 'down')}
+                      onClick={() => {
+                        const newOptions = [...pollOptions];
+                        if (index < pollOptions.length - 1) {
+                          [newOptions[index], newOptions[index + 1]] = [newOptions[index + 1], newOptions[index]];
+                          setPollOptions(newOptions);
+                        }
+                      }}
                       disabled={index === pollOptions.length - 1}
+                      className="h-8 w-8 rounded-lg"
                     >
                       <ChevronDown className="h-4 w-4" />
                     </Button>
@@ -758,8 +299,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveOption(index)}
-                        className="text-destructive hover:text-destructive"
+                        onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== index))}
+                        className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -767,22 +308,21 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   </div>
                 </div>
               ))}
-
               {pollOptions.length < 10 && (
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={handleAddOption}
-                  className="w-full"
+                  onClick={() => setPollOptions([...pollOptions, ''])}
+                  className="w-full rounded-xl"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Option
                 </Button>
               )}
             </Card>
-            <div className="flex gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
               <Select value={pollDuration} onValueChange={setPollDuration}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="rounded-xl">
                   <Timer className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Duration" />
                 </SelectTrigger>
@@ -794,9 +334,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-
               <Select value={pollType} onValueChange={setPollType}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="rounded-xl">
                   <Check className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Vote Type" />
                 </SelectTrigger>
@@ -805,31 +344,138 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   <SelectItem value="multiple">Multiple Choice</SelectItem>
                 </SelectContent>
               </Select>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="destructive"
-                  type="reset"
-                  className="ml-auto"
-                  onClick={() => {
-                    setMessageType("text");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="ml-auto"
-                  disabled={!pollQuestion.trim() || pollOptions.filter(opt => opt.trim()).length < 2}
-                >
-                  Create Poll
-                </Button>
-              </div>
-
-
+              <Button
+                type="submit"
+                disabled={!pollQuestion.trim() || pollOptions.filter(opt => opt.trim()).length < 2}
+                className="ml-auto rounded-xl bg-green-500 text-white hover:bg-green-600"
+              >
+                Create Poll
+              </Button>
             </div>
           </div>
-        )}
+        );
+
+      case 'link':
+        return (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Enter URL"
+                type="url"
+                required
+                className="rounded-xl"
+              />
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Link title (optional)"
+                className="rounded-xl"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              <Textarea
+                ref={textareaRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Add a description (optional)"
+                className="resize-none rounded-xl"
+                style={{ maxHeight: `${maxHeight}px` }}
+              />
+              <Button
+                type="submit"
+                disabled={!url.trim()}
+                size="icon"
+                className="h-10 w-10 rounded-xl bg-orange-500 text-white hover:bg-orange-600"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        );
+
+      case 'quote':
+        return (
+          <div className="space-y-3">
+            <Textarea
+              value={sourceText}
+              onChange={(e) => setSourceText(e.target.value)}
+              placeholder="Enter the text you want to quote"
+              className="resize-none font-medium rounded-xl"
+              style={{ maxHeight: `${maxHeight}px` }}
+            />
+            <div className="flex items-end gap-2">
+              <Textarea
+                ref={textareaRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Add your thoughts (optional)"
+                className="resize-none rounded-xl"
+                style={{ maxHeight: `${maxHeight}px` }}
+              />
+              <Button
+                type="submit"
+                disabled={!sourceText.trim()}
+                size="icon"
+                className="h-10 w-10 rounded-xl bg-pink-500 text-white hover:bg-pink-600"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className={`sticky bottom-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${className}`}>
+      <form onSubmit={handleSubmit} className="container mx-auto">
+        <div className="border-t p-4 space-y-4">
+          {/* Message Type Selector */}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-2 hover:bg-muted"
+            >
+              {/* Use the current message type's icon */}
+              {React.createElement(getCurrentIcon(), { className: "h-4 w-4" })}
+            </Button>
+
+            {isExpanded && (
+              <div className="flex gap-1 p-1 bg-muted/50 rounded-xl">
+                {MESSAGE_TYPES.map((type) => {
+                  const Icon = type.icon;
+                  const isSelected = messageType === type.id;
+
+                  return (
+                    <Button
+                      key={type.id}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMessageType(type.id as MessageType)}
+                      className={`gap-2 rounded-lg transition-colors ${
+                        isSelected ? type.color : 'hover:bg-muted'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="hidden sm:inline">{type.label}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Message Input Area */}
+          <div className="relative">
+            {renderMessageInput()}
+          </div>
+        </div>
       </form>
     </div>
   );

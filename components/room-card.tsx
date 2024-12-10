@@ -43,7 +43,7 @@ import {
   Globe, Lock, Users, Crown, Copy, LogOut, Trash2,
   MessageCircle, Bell, BellOff, Timer, Info,
   DoorOpen, Eye, EyeOff, Pin, PinOff, MessageSquare,
-  RefreshCw
+  RefreshCw, ChevronDown, ChevronUp
 } from "lucide-react";
 
 const IconButton = memo(({
@@ -74,7 +74,8 @@ const IconButton = memo(({
 ));
 
 // Room expiry countdown component
-const ExpiryCountdown = memo(({ expiresAt, onExpired, onExpiringSoon }) => {
+const ExpiryCountdown = memo(({ expiresAt, onExpired, onExpiringSoon, hasJoined
+                                ,isCreator }) => {
   const [timeLeft, setTimeLeft] = useState('');
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
 
@@ -165,6 +166,9 @@ const RoomCard = memo(({
   const { room: roomData, participants, loading, error } = useRoom(room.id);
   const isSelected = selectedRoom?.id === room.id;
   const hasJoined = participants?.some(p => p.user_id === currentUserId);
+
+  // Add expanded state
+  const [expanded, setExpanded] = useState(false);
 
   // Custom presence handling
   useEffect(() => {
@@ -370,22 +374,21 @@ const RoomCard = memo(({
               <NotificationBadge count={unreadCount} />
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold truncate">{roomData.name}</h3>
-                {isCreator && <Crown className="h-4 w-4 text-yellow-500" />}
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="gap-1">
-                  <Users className="h-3 w-3" />
-                  {participants.length}
-                </Badge>
-                {roomData.expires_at && (
-                  <Badge variant="outline" className="gap-1">
-                    <Timer className="h-3 w-3" />
-                    {formatDistanceToNow(new Date(roomData.expires_at), { addSuffix: true })}
-                  </Badge>
+                <h3 className="text-base font-semibold tracking-tight">{room.name}</h3>
+                {isCreator && (
+                  <motion.div
+                    animate={{ rotate: [0, -10, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 5 }}
+                  >
+                    <Crown className="h-4 w-4 text-yellow-500" />
+                  </motion.div>
                 )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-3 w-3" />
+                <span>{participants?.length || 0} active</span>
               </div>
             </div>
           </div>
@@ -394,18 +397,6 @@ const RoomCard = memo(({
           <div className="flex items-center gap-1">
             {hasJoined && (
               <>
-                <IconButton
-                  icon={notificationsEnabled ? Bell : BellOff}
-                  onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-                  label={`${notificationsEnabled ? 'Disable' : 'Enable'} notifications`}
-                  active={notificationsEnabled}
-                />
-                <IconButton
-                  icon={isPinned ? PinOff : Pin}
-                  onClick={() => setIsPinned(!isPinned)}
-                  label={isPinned ? 'Unpin room' : 'Pin room'}
-                  active={isPinned}
-                />
                 <IconButton
                   icon={MessageSquare}
                   onClick={() => onSelect?.(roomData)}
@@ -445,6 +436,8 @@ const RoomCard = memo(({
             <div className="flex items-center justify-between">
               <ExpiryCountdown
                 expiresAt={roomData.expires_at}
+                hasJoined={hasJoined}
+                isCreator={isCreator}
                 onExpired={async () => {
                   if (isCreator) {
                     await onTerminate(roomData);
@@ -453,7 +446,8 @@ const RoomCard = memo(({
                       description: "The room has been automatically terminated due to expiration."
                     });
                   }
-                }}
+                }
+              }
                 onExpiringSoon={() => {
                   if (isCreator) {
                     toast({
@@ -475,19 +469,83 @@ const RoomCard = memo(({
                   }
                 }}
               />
+
+            {/*  trash and referesh*/}
               {isCreator && !isExpired && (
-                <IconButton
-                  icon={RefreshCw}
-                  onClick={handleExtendRoom}
-                  label="Extend room time"
-                />
+                <div className="flex items-center gap-4">
+                  {/* Terminate Room Section */}
+                  {
+                    !hasJoined && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <IconButton
+                            icon={Trash2}
+                            label="Terminate Room"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive/90 transition-colors"
+                          />
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-lg shadow-lg bg-white dark:bg-gray-800 p-6">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-lg font-semibold text-destructive">
+                              Terminate Room?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                              This action cannot be undone. All participants will be removed, and
+                              the room will be permanently closed.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="mt-4 flex justify-end gap-3">
+                            <AlertDialogCancel className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg">
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onTerminate(roomData)}
+                              className="px-2 py-2 text-white bg-destructive hover:bg-destructive/90 rounded-lg transition-all"
+                            >
+                              Terminate Room
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )
+                  }
+
+
+                  {/* Extend Room Section */}
+                  <IconButton
+                    icon={RefreshCw}
+                    onClick={handleExtendRoom}
+                    label="Extend Room Time"
+                  />
+                </div>
               )}
+
+
+
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
+        {/* Expand/Collapse Button */}
         {hasJoined && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(!expanded)}
+            className="w-full mt-4 hover:bg-accent/50"
+          >
+            {expanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+        )}
+
+        {/* Footer Actions - Now conditionally rendered based on expanded state */}
+        {hasJoined && expanded && (
           <div className="mt-4 pt-4 border-t flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
@@ -497,9 +555,16 @@ const RoomCard = memo(({
               <span className="text-sm text-muted-foreground">
                 {participants.length} members
               </span>
+              <IconButton
+                icon={LogOut}
+                onClick={() => onLeave(room.id)}
+                label="Leave room"
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+              />
             </div>
             <div className="flex items-center gap-2">
-              {isCreator ? (
+              {isCreator && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <IconButton
@@ -521,22 +586,13 @@ const RoomCard = memo(({
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => onTerminate(roomData)}
-                        className="bg-destructive text-destructive-foreground
-                                 hover:bg-destructive/90"
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Terminate Room
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              ) : (
-                <IconButton
-                  icon={LogOut}
-                  onClick={() => onLeave(room.id)}
-                  label="Leave room"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
-                />
               )}
               <IconButton
                 icon={Info}
@@ -546,10 +602,13 @@ const RoomCard = memo(({
             </div>
           </div>
         )}
+
+
+
       </div>
 
-      {/* Room Details Sheet */}
-      <Sheet open={showDetails} onOpenChange={setShowDetails}>
+        {/* Room Details Sheet */}
+          <Sheet open={showDetails} onOpenChange={setShowDetails}>
         <SheetContent className="sm:max-w-lg">
           <SheetHeader>
             <SheetTitle>Room Details</SheetTitle>

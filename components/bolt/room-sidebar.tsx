@@ -1,5 +1,5 @@
 // RoomSidebar.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from '@/utils/supabase/client';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,7 +23,8 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
   const [joinedRooms, setJoinedRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
-
+  const [initialLoading, setInitialLoading] = useState(true);
+  const isFirstRender = useRef(true);
   // Initialize rooms and user
   useEffect(() => {
     const initialize = async () => {
@@ -56,7 +57,11 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
           variant: "destructive"
         });
       } finally {
-        setLoading(false);
+        // Only set initialLoading to false if this is the first render
+        if (isFirstRender.current) {
+          setInitialLoading(false);
+          isFirstRender.current = false;
+        }
       }
     };
 
@@ -67,7 +72,10 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
       .channel('rooms_changes')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'rooms' },
-        () => initialize()
+        () => {
+          // Don't show loading state for real-time updates
+          initialize();
+        }
       )
       .subscribe();
 
@@ -75,7 +83,6 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
       supabase.removeChannel(roomSubscription);
     };
   }, []);
-
   const handleJoinRoom = async (room) => {
     try {
       const { error } = await supabase
@@ -164,6 +171,14 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
     return matchesSearch && isVisible;
   });
 
+  const LoadingSkeleton = () => (
+    <div className="space-y-2">
+      {[1, 2, 3].map(i => (
+        <div key={i} className="h-24 animate-pulse bg-muted rounded-lg" />
+      ))}
+    </div>
+  );
+
   return (
     <div className="h-full flex flex-col bg-background/95 backdrop-blur">
       <div className="p-4 space-y-4">
@@ -204,7 +219,7 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
               </DialogHeader>
               <JoinPrivateRoom
                 onRoomSelect={(room) => {
-                  onRoomSelect(room); // This will make the chat appear
+                  onRoomSelect(room);
                   setJoinedRooms(prev => [...prev, room.id]);
                   setIsJoiningPrivate(false);
                 }}
@@ -227,7 +242,7 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
       </div>
 
       {/* Room Tabs */}
-      <Tabs defaultValue="all" className="flex-1">
+      <Tabs defaultValue="all" className="flex flex-col flex-1 min-h-0">
         <TabsList className="grid w-full grid-cols-2 px-4">
           <TabsTrigger value="all">All Rooms</TabsTrigger>
           <TabsTrigger value="joined">Joined</TabsTrigger>
@@ -235,12 +250,8 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
 
         <ScrollArea className="flex-1 px-4">
           <TabsContent value="all" className="mt-2 space-y-2">
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-24 animate-pulse bg-muted rounded-lg" />
-                ))}
-              </div>
+            {initialLoading ? (
+              <LoadingSkeleton />
             ) : filteredRooms.length > 0 ? (
               filteredRooms.map(room => (
                 <RoomCard
@@ -251,7 +262,6 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
                   onJoin={handleJoinRoom}
                   onLeave={handleLeaveRoom}
                   onTerminate={handleTerminateRoom}
-
                 />
               ))
             ) : (
@@ -264,12 +274,8 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
           </TabsContent>
 
           <TabsContent value="joined" className="mt-2 space-y-2">
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-24 animate-pulse bg-muted rounded-lg" />
-                ))}
-              </div>
+            {initialLoading ? (
+              <LoadingSkeleton />
             ) : filteredRooms.filter(room => joinedRooms.includes(room.id)).length > 0 ? (
               filteredRooms
                 .filter(room => joinedRooms.includes(room.id))
