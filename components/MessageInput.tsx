@@ -9,10 +9,11 @@ import {
   Send, Code, MessageSquare, BarChart3,
   Plus, X, ChevronUp, ChevronDown,
   Timer, Check, Link, Quote,
-  AlertCircle, MessageCircle, PanelLeftClose, PanelLeftOpen
+  AlertCircle, MessageCircle, PanelLeftClose, PanelLeftOpen, Image as ImageIcon, Mic, Square
 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
-type MessageType = 'text' | 'code' | 'poll' | 'link' | 'quote';
+type MessageType = 'text' | 'code' | 'poll' | 'link' | 'quote' | 'image' | 'voice';
 
 interface Message {
   type: MessageType;
@@ -23,9 +24,16 @@ interface Message {
   url?: string;
   title?: string;
   sourceText?: string;
+  imageUrl?: string;
   settings?: {
     duration: number | null;
     type: 'single' | 'multiple';
+  };
+  metadata?: {
+    url?: string;
+    key?: string;
+    id?: string;
+    duration?: number;
   };
 }
 
@@ -41,7 +49,9 @@ const MESSAGE_TYPES = [
   { id: 'code', icon: Code, label: 'Code', color: 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20' },
   { id: 'poll', icon: BarChart3, label: 'Poll', color: 'bg-green-500/10 text-green-500 hover:bg-green-500/20' },
   { id: 'link', icon: Link, label: 'Link', color: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20' },
-  { id: 'quote', icon: Quote, label: 'Quote', color: 'bg-pink-500/10 text-pink-500 hover:bg-pink-500/20' }
+  { id: 'quote', icon: Quote, label: 'Quote', color: 'bg-pink-500/10 text-pink-500 hover:bg-pink-500/20' },
+  { id: 'image', icon: ImageIcon, label: 'Image', color: 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20' },
+  { id: 'voice', icon: Mic, label: 'Voice', color: 'bg-red-500/10 text-red-500 hover:bg-red-500/20' }
 ];
 
 const LANGUAGES = [
@@ -98,6 +108,161 @@ const MessageInput: React.FC<MessageInputProps> = ({
     setMessageType('text');
   };
 
+  // ... (keep existing state variables)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+
+  // voice
+
+  // States
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+
+// Refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout>();
+
+// Function to handle voice upload
+  const uploadVoiceMessage = async (blob: Blob): Promise<any> => {
+   const supabaseClient = createClient();
+
+    const fileName = `${Math.random()}.webm`;
+    const filePath = `${fileName}`;
+
+    try {
+      setIsUploading(true);
+      const { data, error } = await supabaseClient
+        .storage
+        .from('rooms')
+        .upload(filePath, blob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'audio/webm',
+        });
+
+      if (error) throw error;
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabaseClient
+        .storage
+        .from('rooms')
+        .getPublicUrl(data.path);
+
+      return {
+        url: publicUrl,
+        key: data.path,
+        id: data.id,
+        duration: recordingTime
+      };
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+// Recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    }
+  };
+
+// Cleanup useEffect
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, []);
+
+
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const supabaseClient = createClient()
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    try {
+      setIsUploading(true);
+      const { data, error } = await supabaseClient
+        .storage
+        .from('rooms')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          onUploadProgress: (progress: any) => {
+            setUploadProgress((progress.loaded / progress.total) * 100);
+          },
+        });
+
+      if (error) throw error;
+
+      // Get the public URL
+      // Get the public URL for the uploaded file
+      const { data: urlData } = supabaseClient
+        .storage
+        .from('rooms')
+        .getPublicUrl(data.path);
+
+      return {
+        url: urlData.publicUrl,
+        key: data.path,
+        id: data.id
+      };
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedImage(e.target.files[0]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (disabled) return;
@@ -118,6 +283,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
             content: message,
             language
           };
+          break;
+
+        case 'voice':
+          if (!audioBlob) return;
+          const voiceData = await uploadVoiceMessage(audioBlob);
+          messageToSend = {
+            type: 'voice',
+            content: message, // Optional caption
+            metadata: voiceData
+          };
+          setAudioBlob(null);
           break;
 
         case 'poll':
@@ -151,6 +327,20 @@ const MessageInput: React.FC<MessageInputProps> = ({
             type: 'quote',
             sourceText,
             content: message
+          };
+          break;
+
+        case 'image':
+          if (!selectedImage) return;
+          const imageData = await uploadImage(selectedImage);
+          messageToSend = {
+            type: 'image',
+            content: message, // Optional caption
+            metadata: {
+              url: imageData.url,
+              key: imageData.key,
+              id: imageData.id
+            }
           };
           break;
 
@@ -200,6 +390,81 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </div>
         );
 
+      case 'voice':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              {!isRecording && !audioBlob && (
+                <Button
+                  type="button"
+                  onClick={startRecording}
+                  className="rounded-xl bg-red-500 text-white hover:bg-red-600"
+                >
+                  <Mic className="h-4 w-4 mr-2" />
+                  Start Recording
+                </Button>
+              )}
+
+              {isRecording && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={stopRecording}
+                    className="rounded-xl bg-red-500 text-white hover:bg-red-600"
+                  >
+                    <Square className="h-4 w-4 mr-2" />
+                    Stop Recording
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <div className="animate-pulse">
+                      <div className="h-2 w-2 rounded-full bg-red-500" />
+                    </div>
+                    <span className="text-sm font-medium">
+                {Math.floor(recordingTime / 60)}:
+                      {String(recordingTime % 60).padStart(2, '0')}
+              </span>
+                  </div>
+                </div>
+              )}
+
+              {audioBlob && !isRecording && (
+                <div className="flex items-center gap-2">
+                  <audio src={URL.createObjectURL(audioBlob)} controls className="h-10" />
+                  <Button
+                    type="button"
+                    onClick={() => setAudioBlob(null)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {audioBlob && (
+              <div className="flex items-end gap-2">
+                <Textarea
+                  ref={textareaRef}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Add a caption (optional)"
+                  className="resize-none rounded-xl"
+                  style={{ maxHeight: `${maxHeight}px` }}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl bg-red-500 text-white hover:bg-red-600"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+
       case 'code':
         return (
           <div className="space-y-3">
@@ -229,6 +494,63 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 disabled={!message.trim()}
                 size="icon"
                 className="h-10 w-10 rounded-xl bg-purple-500 text-white hover:bg-purple-600"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        );
+
+      case 'image':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageSelect}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-xl"
+                variant="outline"
+              >
+                <ImageIcon className="h-4 w-4 mr-2" />
+                {selectedImage ? 'Change Image' : 'Select Image'}
+              </Button>
+              {selectedImage && (
+                <span className="text-sm text-muted-foreground">
+                  {selectedImage.name}
+                </span>
+              )}
+            </div>
+
+            {isUploading && (
+              <div className="w-full bg-muted rounded-full h-2">
+                <div
+                  className="bg-cyan-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            )}
+
+            <div className="flex items-end gap-2">
+              <Textarea
+                ref={textareaRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Add a caption (optional)"
+                className="resize-none rounded-xl"
+                style={{ maxHeight: `${maxHeight}px` }}
+              />
+              <Button
+                type="submit"
+                disabled={!selectedImage || isUploading}
+                size="icon"
+                className="h-10 w-10 rounded-xl bg-cyan-500 text-white hover:bg-cyan-600"
               >
                 <Send className="h-4 w-4" />
               </Button>
@@ -394,6 +716,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
             </div>
           </div>
         );
+
 
       case 'quote':
         return (

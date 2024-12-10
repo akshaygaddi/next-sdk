@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
@@ -12,7 +12,8 @@ import {
   ChevronUp,
   BarChart3,
   Quote,
-  ExternalLink
+  ExternalLink,
+  Image as ImageIcon, Mic, ArrowDown
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -25,12 +26,31 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+// Scroll indicator component
+const ScrollIndicator = ({ onClick, unreadCount }) => (
+  <div className="fixed bottom-6 right-6 z-50">
+    <Button
+      onClick={onClick}
+      className="rounded-full shadow-lg bg-primary hover:bg-primary/90 text-white group"
+      size="sm"
+    >
+      <ArrowDown className="h-4 w-4 mr-2 animate-bounce" />
+      <span>{unreadCount} new message{unreadCount > 1 ? 's' : ''}</span>
+    </Button>
+  </div>
+);
 
-export const Message = React.memo(({ message, currentUser, showAvatar = true }) => {
+export const Message = React.memo(({message,
+                                     currentUser,
+                                     showAvatar = true,  }) => {
   const [copied, setCopied] = useState(false);
   const [isCodeExpanded, setIsCodeExpanded] = useState(false);
   const isOwnMessage = message.user_id === currentUser?.id;
+  const messageRef = useRef(null);
+
+
 
   const handleCopy = async (text) => {
     try {
@@ -41,6 +61,8 @@ export const Message = React.memo(({ message, currentUser, showAvatar = true }) 
       console.error('Failed to copy:', err);
     }
   };
+
+
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -56,6 +78,44 @@ export const Message = React.memo(({ message, currentUser, showAvatar = true }) 
       handleCopy(message.content);
     }
   };
+
+  // Simple function to get display name from message
+  const getDisplayName = () => {
+    return message.user_name || 'Anonymous User';
+  };
+
+  // Get avatar initials from display name
+  const getAvatarInitials = () => {
+    const name = getDisplayName();
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const AvatarComponent = () => (
+    <div className="relative shrink-0 transform transition-transform duration-300 group-hover:scale-105">
+      <Avatar className="h-8 w-8 ring-2 ring-primary/10">
+        <AvatarImage
+          src={`https://avatar.vercel.sh/${message.user_id}`}
+          alt={`${getDisplayName()}'s avatar`}
+        />
+        <AvatarFallback>
+          {getAvatarInitials()}
+        </AvatarFallback>
+      </Avatar>
+      <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-background" />
+    </div>
+  );
+
+  const UserInfo = () => (
+    <div className="flex items-center gap-2 mb-2">
+      <span className="text-xs font-medium text-foreground/80 hover:text-primary transition-colors duration-300 cursor-pointer">
+        {getDisplayName()}
+      </span>
+      <div className="h-1 w-1 rounded-full bg-foreground/30" />
+      <span className="text-xs text-muted-foreground">
+        {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+      </span>
+    </div>
+  );
 
   const ActionButton = ({ icon: Icon, label, onClick, className = "" }) => (
     <TooltipProvider>
@@ -99,6 +159,96 @@ export const Message = React.memo(({ message, currentUser, showAvatar = true }) 
             <p className="text-sm leading-relaxed text-foreground/90">
               {message.content}
             </p>
+          </div>
+        );
+
+      case 'image':
+        const [showPreview, setShowPreview] = useState(false);
+        return (
+          <>
+            <Card
+              className="overflow-hidden group/card hover:shadow-sm transition-all duration-300 cursor-pointer border border-border/40"
+              onClick={() => message.metadata?.metadata?.url && setShowPreview(true)}
+            >
+              <div className="relative">
+                <div className="relative aspect-video overflow-hidden bg-accent/10">
+                  {message.metadata?.metadata?.url ? (
+                    <img
+                      src={message.metadata.metadata.url}
+                      alt="Uploaded image"
+                      className="object-contain w-full h-full transform transition-transform duration-500 group-hover/card:scale-105"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
+              </div>
+              {message.content && (
+                <div className="p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      {message.content}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            <Dialog open={showPreview} onOpenChange={setShowPreview}>
+              <DialogContent className="max-w-6xl p-2 bg-background/95">
+                <div className="sr-only">
+                  <DialogTitle>Image Preview</DialogTitle>
+                </div>
+                {message.metadata?.metadata?.url && (
+                  <div className="relative w-full flex items-center justify-center">
+                    <img
+                      src={message.metadata.metadata.url}
+                      alt="Image preview"
+                      className="max-h-[85vh] w-auto object-contain border border-border/40 rounded"
+                    />
+                    {message.content && (
+                      <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/60 rounded-b">
+                        <p className="text-sm text-white/90">
+                          {message.content}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          </>
+        );
+
+      case 'voice':
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Mic className="h-4 w-4 text-red-500" />
+              <span className="text-xs text-red-500">Voice Message</span>
+              {message.metadata?.metadata?.duration && (
+                <span className="text-xs text-muted-foreground">
+                  {Math.floor(message.metadata.metadata.duration / 60)}:
+                  {String(message.metadata.metadata.duration % 60).padStart(2, '0')}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <audio
+                src={message.metadata?.metadata?.url}
+                controls
+                className="max-w-full"
+              />
+            </div>
+            {message.content && (
+              <p className="text-sm text-muted-foreground mt-2">
+                {message.content}
+              </p>
+            )}
           </div>
         );
 
@@ -211,23 +361,13 @@ export const Message = React.memo(({ message, currentUser, showAvatar = true }) 
   };
 
   return (
-    <div className={`flex items-start gap-4 p-4 group ${
-      isOwnMessage ? "flex-row-reverse" : "flex-row"
-    }`}>
-      {!isOwnMessage && showAvatar && (
-        <div className="relative shrink-0 transform transition-transform duration-300 group-hover:scale-105">
-          <Avatar className="h-8 w-8 ring-2 ring-primary/10">
-            <AvatarImage
-              src={`https://avatar.vercel.sh/${message.user_id}`}
-              alt={`${message.user_id}'s avatar`}
-            />
-            <AvatarFallback>
-              {message.user_id.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-background" />
-        </div>
-      )}
+    <div
+      ref={messageRef}
+      className={`flex items-start gap-4 p-4 group ${
+        isOwnMessage ? "flex-row-reverse" : "flex-row"
+      }`}
+    >
+      {!isOwnMessage && showAvatar && <AvatarComponent />}
       <div className={`flex-1 max-w-2xl ${isOwnMessage ? "items-end" : "items-start"}`}>
         <div className={`relative p-4 rounded-2xl backdrop-blur-sm transition-all duration-300 
           ${isOwnMessage
@@ -235,17 +375,7 @@ export const Message = React.memo(({ message, currentUser, showAvatar = true }) 
           : "bg-accent/30 hover:bg-accent/40"
         }`}
         >
-          {!isOwnMessage && (
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-medium text-foreground/80 hover:text-primary transition-colors duration-300 cursor-pointer">
-                {message.user_id}
-              </span>
-              <div className="h-1 w-1 rounded-full bg-foreground/30" />
-              <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-              </span>
-            </div>
-          )}
+          {!isOwnMessage && <UserInfo />}
           {renderContent()}
           <MessageActions />
         </div>
@@ -255,3 +385,6 @@ export const Message = React.memo(({ message, currentUser, showAvatar = true }) 
 });
 
 export default Message;
+
+
+

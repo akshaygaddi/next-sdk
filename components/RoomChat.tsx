@@ -21,7 +21,18 @@ import {
   AlertCircle,
   Crown,
   Lock,
-  Globe, PanelLeftClose, PanelLeftOpen, Quote, Code, BarChart3, Link, Highlighter, MessageSquare, ImageIcon, Mic
+  Globe,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Quote,
+  Code,
+  BarChart3,
+  Link,
+  Highlighter,
+  MessageSquare,
+  ImageIcon,
+  Mic,
+  ArrowDown
 } from "lucide-react";
 import { formatDistanceToNow, formatDistance } from "date-fns";
 import { toast } from "@/hooks/use-toast";
@@ -34,6 +45,8 @@ import {
 import MessageInput from "@/components/MessageInput";
 import { Card } from "@/components/ui/card";
 import  Message  from "@/components/messageDisplay";
+import ScrollManager from "@/components/ScrollManager";
+
 
 
 
@@ -184,9 +197,10 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
 
   const supabase = createClient();
   const router = useRouter();
-  const messagesEndRef = useRef(null);
-  const messageInputRef = useRef(null);
 
+
+  // scorll
+  const scrollContainerRef = useRef(null);
 
   // Load participants visibility from localStorage
   useEffect(() => {
@@ -201,10 +215,6 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
     localStorage.setItem('showParticipants', JSON.stringify(showParticipants));
   }, [showParticipants]);
 
-  // Scroll to bottom
-  const scrollToBottom = useCallback((behavior = "smooth") => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
-  }, []);
 
   // Update timer for room expiration
   useEffect(() => {
@@ -257,7 +267,6 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
         setMessages(messagesData.data);
 
         setLoading(false);
-        setTimeout(() => scrollToBottom("auto"), 100);
       } catch (error) {
         if (mounted) {
           setError(error.message);
@@ -315,7 +324,6 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
         },
         (payload) => {
           setMessages((prev) => [...prev, payload.new]);
-          scrollToBottom();
         }
       )
       .subscribe();
@@ -325,7 +333,7 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
       supabase.removeChannel(participantsSubscription);
       supabase.removeChannel(messagesSubscription);
     };
-  }, [room.id, scrollToBottom]);
+  }, [room.id]);
 
   // Message handlers
   const handleSendMessage = async (messageData) => {
@@ -424,47 +432,33 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
       <div className="flex-1 flex flex-col">
         <RoomHeader room={room} participants={participants} timeRemaining={timeRemaining} showSidebar={showSidebar} showParticipants={showParticipants} currentUser={currentUser} onToggleSidebar={onToggleSidebar} setShowParticipants={setShowParticipants} handleLeaveRoom={handleLeaveRoom} handleTerminateRoom={undefined}/>
 
-
         {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
-            {messages.map((message, index) => {
-              const prevMessage = messages[index - 1];
-              const showAvatar = !prevMessage ||
-                prevMessage.user_id !== message.user_id ||
-                new Date(message.created_at).getTime() - new Date(prevMessage.created_at).getTime() > 300000;
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto p-4 space-y-4"
+        >
+          {messages.map((message) => (
+            <Message
+              key={message.id}
+              message={message}
+              currentUser={currentUser}
+              showAvatar={true}
+            />
+          ))}
+        </div>
 
-              const showDate = !prevMessage ||
-                new Date(message.created_at).toLocaleDateString() !==
-                new Date(prevMessage.created_at).toLocaleDateString();
-
-              return (
-                <div key={message.id}>
-                  {showDate && (
-                    <div className="flex items-center my-6">
-                      <Separator className="flex-1" />
-                      <span className="mx-4 text-xs text-muted-foreground px-2 py-1 rounded-full bg-muted">
-                        {new Date(message.created_at).toLocaleDateString()}
-                      </span>
-                      <Separator className="flex-1" />
-                    </div>
-                  )}
-                  <Message
-                    message={message}
-                    currentUser={currentUser}
-                    showAvatar={showAvatar}
-                  />
-                </div>
-              );
-            })}
-          </div>
-          <div ref={messagesEndRef} />
-        </ScrollArea>
+        {/* ScrollManager positioned above MessageInput */}
+        <div className="flex items-center justify-center px-2 py-1 text-xs font-bold text-white"> {/* Positioned above MessageInput */}
+          <ScrollManager
+            messages={messages}
+            scrollContainerRef={scrollContainerRef}
+          />
+        </div>
 
         {/* Message Input */}
         <MessageInput
           onSendMessage={handleSendMessage}
-          defaultWidth="800px" // Optional custom width
+          defaultWidth="800px"
         />
       </div>
 

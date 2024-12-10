@@ -132,7 +132,7 @@ const RoomsPage = ()  => {
       {/* Sidebar */}
       <div
         className={`
-          ${showSidebar ? 'w-90' : 'w-0'} 
+          ${showSidebar ? 'w-80' : 'w-0'} 
           transition-all duration-300 ease-in-out
           ${isMobile ? 'absolute z-50 h-full' : 'relative'}
           border-r bg-card/50 backdrop-blur-sm

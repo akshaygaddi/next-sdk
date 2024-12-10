@@ -57,7 +57,15 @@ export async function updateSession(request: NextRequest) {
     const isProtectedPage =
       !isAuthPage && !isPublicPath
 
-    // Redirect logic
+
+    // Redirect root (`/`) to `/home`
+    if (request.nextUrl.pathname === "/") {
+      const homeUrl = request.nextUrl.clone();
+      homeUrl.pathname = "/home";
+      return NextResponse.redirect(homeUrl);
+    }
+
+    // Redirect logic for protected
     if (!user && isProtectedPage) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/auth/login";
