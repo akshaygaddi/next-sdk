@@ -48,15 +48,15 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith(path),
     );
 
-    const publicPaths = ['/home', '/public'];
+    const publicPaths = ["/home", "/public"];
 
-    const isPublicPath = publicPaths.some((path) =>
-      request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path)
+    const isPublicPath = publicPaths.some(
+      (path) =>
+        request.nextUrl.pathname === path ||
+        request.nextUrl.pathname.startsWith(path),
     );
 
-    const isProtectedPage =
-      !isAuthPage && !isPublicPath
-
+    const isProtectedPage = !isAuthPage && !isPublicPath;
 
     // Redirect root (`/`) to `/home`
     if (request.nextUrl.pathname === "/") {

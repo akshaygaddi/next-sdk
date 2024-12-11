@@ -1,19 +1,47 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Send, Code, MessageSquare, BarChart3,
-  Plus, X, ChevronUp, ChevronDown,
-  Timer, Check, Link, Quote,
-  AlertCircle, MessageCircle, PanelLeftClose, PanelLeftOpen, Image as ImageIcon, Mic, Square
+  Send,
+  Code,
+  MessageSquare,
+  BarChart3,
+  Plus,
+  X,
+  ChevronUp,
+  ChevronDown,
+  Timer,
+  Check,
+  Link,
+  Quote,
+  AlertCircle,
+  MessageCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Image as ImageIcon,
+  Mic,
+  Square,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
-type MessageType = 'text' | 'code' | 'poll' | 'link' | 'quote' | 'image' | 'voice';
+type MessageType =
+  | "text"
+  | "code"
+  | "poll"
+  | "link"
+  | "quote"
+  | "image"
+  | "voice";
 
 interface Message {
   type: MessageType;
@@ -27,7 +55,7 @@ interface Message {
   imageUrl?: string;
   settings?: {
     duration: number | null;
-    type: 'single' | 'multiple';
+    type: "single" | "multiple";
   };
   metadata?: {
     url?: string;
@@ -45,67 +73,97 @@ interface MessageInputProps {
 }
 
 const MESSAGE_TYPES = [
-  { id: 'text', icon: MessageSquare, label: 'Text', color: 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20' },
-  { id: 'code', icon: Code, label: 'Code', color: 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20' },
+  {
+    id: "text",
+    icon: MessageSquare,
+    label: "Text",
+    color: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
+  },
+  {
+    id: "code",
+    icon: Code,
+    label: "Code",
+    color: "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20",
+  },
   // { id: 'poll', icon: BarChart3, label: 'Poll', color: 'bg-green-500/10 text-green-500 hover:bg-green-500/20' },
-  { id: 'link', icon: Link, label: 'Link', color: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20' },
-  { id: 'quote', icon: Quote, label: 'Quote', color: 'bg-pink-500/10 text-pink-500 hover:bg-pink-500/20' },
-  { id: 'image', icon: ImageIcon, label: 'Image', color: 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20' },
-  { id: 'voice', icon: Mic, label: 'Voice', color: 'bg-red-500/10 text-red-500 hover:bg-red-500/20' }
+  {
+    id: "link",
+    icon: Link,
+    label: "Link",
+    color: "bg-orange-500/10 text-orange-500 hover:bg-orange-500/20",
+  },
+  {
+    id: "quote",
+    icon: Quote,
+    label: "Quote",
+    color: "bg-pink-500/10 text-pink-500 hover:bg-pink-500/20",
+  },
+  {
+    id: "image",
+    icon: ImageIcon,
+    label: "Image",
+    color: "bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20",
+  },
+  {
+    id: "voice",
+    icon: Mic,
+    label: "Voice",
+    color: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
+  },
 ];
 
 const LANGUAGES = [
-  { value: 'javascript', label: 'JavaScript' },
-  { value: 'typescript', label: 'TypeScript' },
-  { value: 'python', label: 'Python' },
-  { value: 'html', label: 'HTML' },
-  { value: 'css', label: 'CSS' }
+  { value: "javascript", label: "JavaScript" },
+  { value: "typescript", label: "TypeScript" },
+  { value: "python", label: "Python" },
+  { value: "html", label: "HTML" },
+  { value: "css", label: "CSS" },
 ];
 
 const POLL_DURATIONS = [
-  { value: '1', label: '1 hour' },
-  { value: '24', label: '24 hours' },
-  { value: '168', label: '1 week' }
+  { value: "1", label: "1 hour" },
+  { value: "24", label: "24 hours" },
+  { value: "168", label: "1 week" },
 ];
 
 const MessageInput: React.FC<MessageInputProps> = ({
-                                                     onSendMessage,
-                                                     disabled = false,
-                                                     className = '',
-                                                     maxHeight = 300
-                                                   }) => {
-  const [messageType, setMessageType] = useState<MessageType>('text');
+  onSendMessage,
+  disabled = false,
+  className = "",
+  maxHeight = 300,
+}) => {
+  const [messageType, setMessageType] = useState<MessageType>("text");
   const [isExpanded, setIsExpanded] = useState(true);
-  const [message, setMessage] = useState('');
-  const [language, setLanguage] = useState('javascript');
-  const [pollQuestion, setPollQuestion] = useState('');
-  const [pollOptions, setPollOptions] = useState(['', '']);
-  const [pollDuration, setPollDuration] = useState('24');
-  const [pollType, setPollType] = useState<'single' | 'multiple'>('single');
-  const [url, setUrl] = useState('');
-  const [title, setTitle] = useState('');
-  const [sourceText, setSourceText] = useState('');
+  const [message, setMessage] = useState("");
+  const [language, setLanguage] = useState("javascript");
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
+  const [pollDuration, setPollDuration] = useState("24");
+  const [pollType, setPollType] = useState<"single" | "multiple">("single");
+  const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [sourceText, setSourceText] = useState("");
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
       const scrollHeight = textareaRef.current.scrollHeight;
       textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
     }
   }, [message, maxHeight]);
 
   const resetForm = () => {
-    setMessage('');
-    setPollQuestion('');
-    setPollOptions(['', '']);
-    setPollDuration('24');
-    setPollType('single');
-    setUrl('');
-    setTitle('');
-    setSourceText('');
-    setMessageType('text');
+    setMessage("");
+    setPollQuestion("");
+    setPollOptions(["", ""]);
+    setPollDuration("24");
+    setPollType("single");
+    setUrl("");
+    setTitle("");
+    setSourceText("");
+    setMessageType("text");
   };
 
   // ... (keep existing state variables)
@@ -114,7 +172,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-
   // voice
 
   // States
@@ -122,49 +179,47 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
-// Refs
+  // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout>();
 
-// Function to handle voice upload
+  // Function to handle voice upload
   const uploadVoiceMessage = async (blob: Blob): Promise<any> => {
-   const supabaseClient = createClient();
+    const supabaseClient = createClient();
 
     const fileName = `${Math.random()}.webm`;
     const filePath = `${fileName}`;
 
     try {
       setIsUploading(true);
-      const { data, error } = await supabaseClient
-        .storage
-        .from('rooms')
+      const { data, error } = await supabaseClient.storage
+        .from("rooms")
         .upload(filePath, blob, {
-          cacheControl: '3600',
+          cacheControl: "3600",
           upsert: false,
-          contentType: 'audio/webm',
+          contentType: "audio/webm",
         });
 
       if (error) throw error;
 
       // Get the public URL
-      const { data: { publicUrl } } = supabaseClient
-        .storage
-        .from('rooms')
-        .getPublicUrl(data.path);
+      const {
+        data: { publicUrl },
+      } = supabaseClient.storage.from("rooms").getPublicUrl(data.path);
 
       return {
         url: publicUrl,
         key: data.path,
         id: data.id,
-        duration: recordingTime
+        duration: recordingTime,
       };
     } finally {
       setIsUploading(false);
     }
   };
 
-// Recording functions
+  // Recording functions
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -179,9 +234,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         setAudioBlob(blob);
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       };
 
       mediaRecorder.start();
@@ -189,10 +244,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
       setRecordingTime(0);
 
       recordingTimerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error("Error starting recording:", error);
     }
   };
 
@@ -206,7 +261,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
-// Cleanup useEffect
+  // Cleanup useEffect
   useEffect(() => {
     return () => {
       if (recordingTimerRef.current) {
@@ -215,22 +270,19 @@ const MessageInput: React.FC<MessageInputProps> = ({
     };
   }, []);
 
-
-
   const uploadImage = async (file: File): Promise<string> => {
-    const supabaseClient = createClient()
+    const supabaseClient = createClient();
 
-    const fileExt = file.name.split('.').pop();
+    const fileExt = file.name.split(".").pop();
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `${fileName}`;
 
     try {
       setIsUploading(true);
-      const { data, error } = await supabaseClient
-        .storage
-        .from('rooms')
+      const { data, error } = await supabaseClient.storage
+        .from("rooms")
         .upload(filePath, file, {
-          cacheControl: '3600',
+          cacheControl: "3600",
           upsert: false,
           onUploadProgress: (progress: any) => {
             setUploadProgress((progress.loaded / progress.total) * 100);
@@ -241,15 +293,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
       // Get the public URL
       // Get the public URL for the uploaded file
-      const { data: urlData } = supabaseClient
-        .storage
-        .from('rooms')
+      const { data: urlData } = supabaseClient.storage
+        .from("rooms")
         .getPublicUrl(data.path);
 
       return {
         url: urlData.publicUrl,
         key: data.path,
-        id: data.id
+        id: data.id,
       };
     } finally {
       setIsUploading(false);
@@ -271,76 +322,76 @@ const MessageInput: React.FC<MessageInputProps> = ({
       let messageToSend: Message;
 
       switch (messageType) {
-        case 'text':
+        case "text":
           if (!message.trim()) return;
-          messageToSend = { type: 'text', content: message };
+          messageToSend = { type: "text", content: message };
           break;
 
-        case 'code':
+        case "code":
           if (!message.trim()) return;
           messageToSend = {
-            type: 'code',
+            type: "code",
             content: message,
-            language
+            language,
           };
           break;
 
-        case 'voice':
+        case "voice":
           if (!audioBlob) return;
           const voiceData = await uploadVoiceMessage(audioBlob);
           messageToSend = {
-            type: 'voice',
+            type: "voice",
             content: message, // Optional caption
-            metadata: voiceData
+            metadata: voiceData,
           };
           setAudioBlob(null);
           break;
 
-        case 'poll':
-          const validOptions = pollOptions.filter(opt => opt.trim());
+        case "poll":
+          const validOptions = pollOptions.filter((opt) => opt.trim());
           if (!pollQuestion.trim() || validOptions.length < 2) return;
           messageToSend = {
-            type: 'poll',
+            type: "poll",
             content: pollQuestion,
             question: pollQuestion,
             options: validOptions,
             settings: {
               duration: parseInt(pollDuration),
-              type: pollType
-            }
+              type: pollType,
+            },
           };
           break;
 
-        case 'link':
+        case "link":
           if (!url.trim()) return;
           messageToSend = {
-            type: 'link',
+            type: "link",
             url,
             title: title.trim() || url,
-            content: message
+            content: message,
           };
           break;
 
-        case 'quote':
+        case "quote":
           if (!sourceText.trim()) return;
           messageToSend = {
-            type: 'quote',
+            type: "quote",
             sourceText,
-            content: message
+            content: message,
           };
           break;
 
-        case 'image':
+        case "image":
           if (!selectedImage) return;
           const imageData = await uploadImage(selectedImage);
           messageToSend = {
-            type: 'image',
+            type: "image",
             content: message, // Optional caption
             metadata: {
               url: imageData.url,
               key: imageData.key,
-              id: imageData.id
-            }
+              id: imageData.id,
+            },
           };
           break;
 
@@ -351,18 +402,18 @@ const MessageInput: React.FC<MessageInputProps> = ({
       await onSendMessage(messageToSend);
       resetForm();
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error("Failed to send message:", error);
     }
   };
 
   const getCurrentIcon = () => {
-    const currentType = MESSAGE_TYPES.find(type => type.id === messageType);
+    const currentType = MESSAGE_TYPES.find((type) => type.id === messageType);
     return currentType?.icon || MessageSquare;
   };
 
   const renderMessageInput = () => {
     switch (messageType) {
-      case 'text':
+      case "text":
         return (
           <div className="flex items-end gap-2">
             <Textarea
@@ -370,7 +421,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault(); // Prevent adding a new line
                   handleSubmit(e); // Trigger form submission
                 }
@@ -390,7 +441,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </div>
         );
 
-      case 'voice':
+      case "voice":
         return (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -420,16 +471,20 @@ const MessageInput: React.FC<MessageInputProps> = ({
                       <div className="h-2 w-2 rounded-full bg-red-500" />
                     </div>
                     <span className="text-sm font-medium">
-                {Math.floor(recordingTime / 60)}:
-                      {String(recordingTime % 60).padStart(2, '0')}
-              </span>
+                      {Math.floor(recordingTime / 60)}:
+                      {String(recordingTime % 60).padStart(2, "0")}
+                    </span>
                   </div>
                 </div>
               )}
 
               {audioBlob && !isRecording && (
                 <div className="flex items-center gap-2">
-                  <audio src={URL.createObjectURL(audioBlob)} controls className="h-10" />
+                  <audio
+                    src={URL.createObjectURL(audioBlob)}
+                    controls
+                    className="h-10"
+                  />
                   <Button
                     type="button"
                     onClick={() => setAudioBlob(null)}
@@ -465,7 +520,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </div>
         );
 
-      case 'code':
+      case "code":
         return (
           <div className="space-y-3">
             <Select value={language} onValueChange={setLanguage}>
@@ -473,7 +528,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <SelectValue placeholder="Select Language" />
               </SelectTrigger>
               <SelectContent>
-                {LANGUAGES.map(lang => (
+                {LANGUAGES.map((lang) => (
                   <SelectItem key={lang.value} value={lang.value}>
                     {lang.label}
                   </SelectItem>
@@ -501,7 +556,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </div>
         );
 
-      case 'image':
+      case "image":
         return (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -519,7 +574,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 variant="outline"
               >
                 <ImageIcon className="h-4 w-4 mr-2" />
-                {selectedImage ? 'Change Image' : 'Select Image'}
+                {selectedImage ? "Change Image" : "Select Image"}
               </Button>
               {selectedImage && (
                 <span className="text-sm text-muted-foreground">
@@ -558,7 +613,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </div>
         );
 
-      case 'poll':
+      case "poll":
         return (
           <div className="space-y-3">
             <Input
@@ -570,7 +625,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
             <Card className="p-3 space-y-2 bg-muted/50 rounded-xl border-0">
               {pollOptions.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <Badge variant="outline" className="h-6 w-6 shrink-0 flex items-center justify-center rounded-full">
+                  <Badge
+                    variant="outline"
+                    className="h-6 w-6 shrink-0 flex items-center justify-center rounded-full"
+                  >
                     {index + 1}
                   </Badge>
                   <Input
@@ -591,7 +649,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
                       onClick={() => {
                         const newOptions = [...pollOptions];
                         if (index > 0) {
-                          [newOptions[index], newOptions[index - 1]] = [newOptions[index - 1], newOptions[index]];
+                          [newOptions[index], newOptions[index - 1]] = [
+                            newOptions[index - 1],
+                            newOptions[index],
+                          ];
                           setPollOptions(newOptions);
                         }
                       }}
@@ -607,7 +668,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
                       onClick={() => {
                         const newOptions = [...pollOptions];
                         if (index < pollOptions.length - 1) {
-                          [newOptions[index], newOptions[index + 1]] = [newOptions[index + 1], newOptions[index]];
+                          [newOptions[index], newOptions[index + 1]] = [
+                            newOptions[index + 1],
+                            newOptions[index],
+                          ];
                           setPollOptions(newOptions);
                         }
                       }}
@@ -621,7 +685,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== index))}
+                        onClick={() =>
+                          setPollOptions(
+                            pollOptions.filter((_, i) => i !== index),
+                          )
+                        }
                         className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
                       >
                         <X className="h-4 w-4" />
@@ -634,7 +702,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setPollOptions([...pollOptions, ''])}
+                  onClick={() => setPollOptions([...pollOptions, ""])}
                   className="w-full rounded-xl"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -649,7 +717,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   <SelectValue placeholder="Duration" />
                 </SelectTrigger>
                 <SelectContent>
-                  {POLL_DURATIONS.map(duration => (
+                  {POLL_DURATIONS.map((duration) => (
                     <SelectItem key={duration.value} value={duration.value}>
                       {duration.label}
                     </SelectItem>
@@ -668,7 +736,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
               </Select>
               <Button
                 type="submit"
-                disabled={!pollQuestion.trim() || pollOptions.filter(opt => opt.trim()).length < 2}
+                disabled={
+                  !pollQuestion.trim() ||
+                  pollOptions.filter((opt) => opt.trim()).length < 2
+                }
                 className="ml-auto rounded-xl bg-green-500 text-white hover:bg-green-600"
               >
                 Create Poll
@@ -677,7 +748,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </div>
         );
 
-      case 'link':
+      case "link":
         return (
           <div className="space-y-3">
             <div className="flex gap-2">
@@ -717,8 +788,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </div>
         );
 
-
-      case 'quote':
+      case "quote":
         return (
           <div className="space-y-3">
             <Textarea
@@ -752,7 +822,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <div className={`sticky bottom-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${className}`}>
+    <div
+      className={`sticky bottom-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${className}`}
+    >
       <form onSubmit={handleSubmit} className="container mx-auto">
         <div className="border-t p-4 space-y-4">
           {/* Message Type Selector */}
@@ -782,7 +854,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                       size="sm"
                       onClick={() => setMessageType(type.id as MessageType)}
                       className={`gap-2 rounded-lg transition-colors ${
-                        isSelected ? type.color : 'hover:bg-muted'
+                        isSelected ? type.color : "hover:bg-muted"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -795,9 +867,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </div>
 
           {/* Message Input Area */}
-          <div className="relative">
-            {renderMessageInput()}
-          </div>
+          <div className="relative">{renderMessageInput()}</div>
         </div>
       </form>
     </div>

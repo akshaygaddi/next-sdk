@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,34 +21,37 @@ const JoinPrivateRoom = ({ onRoomSelect, onClose }) => {
     try {
       // First find the room
       const { data: room, error: roomError } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('room_code', roomCode)
-        .eq('type', 'private')
-        .eq('is_active', true)
+        .from("rooms")
+        .select("*")
+        .eq("room_code", roomCode)
+        .eq("type", "private")
+        .eq("is_active", true)
         .single();
 
       if (roomError || !room) {
-        throw new Error('Room not found');
+        throw new Error("Room not found");
       }
 
       // Verify password
       if (room.password !== password) {
-        throw new Error('Invalid password');
+        throw new Error("Invalid password");
       }
 
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
       if (userError || !user) {
-        throw new Error('Authentication required');
+        throw new Error("Authentication required");
       }
 
       // Check if already joined
       const { data: existingParticipant } = await supabase
-        .from('room_participants')
-        .select('*')
-        .eq('room_id', room.id)
-        .eq('user_id', user.id)
+        .from("room_participants")
+        .select("*")
+        .eq("room_id", room.id)
+        .eq("user_id", user.id)
         .single();
 
       if (existingParticipant) {
@@ -60,10 +63,10 @@ const JoinPrivateRoom = ({ onRoomSelect, onClose }) => {
 
       // Join the room
       const { error: joinError } = await supabase
-        .from('room_participants')
+        .from("room_participants")
         .insert({
           room_id: room.id,
-          user_id: user.id
+          user_id: user.id,
         });
 
       if (joinError) throw joinError;
@@ -83,7 +86,7 @@ const JoinPrivateRoom = ({ onRoomSelect, onClose }) => {
       toast({
         title: "Error",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);

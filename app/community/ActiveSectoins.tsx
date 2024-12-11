@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image'
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Target,
   Shield,
@@ -15,23 +15,23 @@ import {
   MessageCircle,
   Clock,
   Link,
-  ChevronLeft, ChevronRight,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   Users,
   ArrowRight,
   Globe,
-  Zap, Award
+  Zap,
+  Award,
+  ArrowDown,
 } from "lucide-react";
-
-
-
-
-
+import { useRouter } from "next/navigation";
 
 export const HeroSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(null);
   const [currentStat, setCurrentStat] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     setIsVisible(true);
@@ -43,40 +43,41 @@ export const HeroSection = () => {
 
   const features = [
     {
-      name: 'Battle Arena',
+      name: "Battle Arena",
       icon: Zap,
-      description: 'Engage in structured debates and see real-time consensus building',
-      preview: 'vs-preview',
-      color: 'from-blue-500 to-purple-500'
+      description:
+        "Engage in structured debates and see real-time consensus building",
+      preview: "vs-preview",
+      color: "from-blue-500 to-purple-500",
     },
     {
-      name: 'Trust System',
+      name: "Trust System",
       icon: Shield,
-      description: 'Build credibility through community validation',
-      preview: 'trust-preview',
-      color: 'from-green-500 to-emerald-500'
+      description: "Build credibility through community validation",
+      preview: "trust-preview",
+      color: "from-green-500 to-emerald-500",
     },
     {
-      name: 'Fact Check',
+      name: "Fact Check",
       icon: CheckCircle,
-      description: 'Verify information through collective intelligence',
-      preview: 'fact-preview',
-      color: 'from-orange-500 to-amber-500'
+      description: "Verify information through collective intelligence",
+      preview: "fact-preview",
+      color: "from-orange-500 to-amber-500",
     },
     {
-      name: 'Expert Recognition',
+      name: "Expert Recognition",
       icon: Award,
-      description: 'Earn reputation in your domain of expertise',
-      preview: 'expert-preview',
-      color: 'from-purple-500 to-pink-500'
-    }
+      description: "Earn reputation in your domain of expertise",
+      preview: "expert-preview",
+      color: "from-purple-500 to-pink-500",
+    },
   ];
 
   const stats = [
-    { label: 'Active Communities', value: '10K+', icon: Users },
-    { label: 'Global Reach', value: '150+', icon: Globe },
-    { label: 'Daily Interactions', value: '1M+', icon: Zap },
-    { label: 'User Rating', value: '4.9/5', icon: Star }
+    { label: "Active Communities", value: "10K+", icon: Users },
+    { label: "Global Reach", value: "150+", icon: Globe },
+    { label: "Daily Interactions", value: "1M+", icon: Zap },
+    { label: "User Rating", value: "4.9/5", icon: Star },
   ];
 
   return (
@@ -99,7 +100,7 @@ export const HeroSection = () => {
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
               animationDuration: `${Math.random() * 10 + 10}s`,
-              animationDelay: `${Math.random() * -20}s`
+              animationDelay: `${Math.random() * -20}s`,
             }}
           />
         ))}
@@ -108,7 +109,9 @@ export const HeroSection = () => {
       <div className="relative max-w-7xl mx-auto px-6 py-24">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Column - Content */}
-          <div className={`space-y-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+          <div
+            className={`space-y-8 transition-all duration-1000 ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}`}
+          >
             {/* Badge */}
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-orange-500/10 to-amber-500/10 backdrop-blur-sm border border-orange-500/20">
               <Sparkles className="w-4 h-4 mr-2 text-orange-500" />
@@ -136,19 +139,25 @@ export const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4">
-              <button className="group relative px-8 py-4 rounded-xl overflow-hidden">
+              <button
+                onClick={() => router.push("/waitlist")}
+                className="group relative px-8 py-4 rounded-xl overflow-hidden"
+              >
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 transition-transform group-hover:scale-105" />
-                <span className="relative text-white font-medium">Join Waitlist</span>
+                <span className="relative text-white font-medium">
+                  Join Waitlist
+                </span>
               </button>
               <button className="px-8 py-4 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-orange-500/20 hover:bg-orange-500/10 transition-colors">
-                <span className="font-medium">Learn More</span>
+                <span className="font-medium">Scroll To Learn More</span>
               </button>
             </div>
-
           </div>
 
           {/* Right Column - Interactive Preview */}
-          <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
+          <div
+            className={`relative transition-all duration-1000 delay-300 ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"}`}
+          >
             {/* Feature Cards */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-amber-500/20 rounded-3xl blur-3xl" />
@@ -164,29 +173,39 @@ export const HeroSection = () => {
                         key={idx}
                         className={`group p-4 rounded-xl transition-all duration-300 cursor-pointer ${
                           activeFeature === idx
-                            ? 'bg-gradient-to-r ' + feature.color + ' text-white'
-                            : 'bg-white/50 dark:bg-gray-900/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                            ? "bg-gradient-to-r " +
+                              feature.color +
+                              " text-white"
+                            : "bg-white/50 dark:bg-gray-900/50 hover:bg-white/80 dark:hover:bg-gray-800/80"
                         }`}
                         onMouseEnter={() => setActiveFeature(idx)}
                         onMouseLeave={() => setActiveFeature(null)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <FeatureIcon className={`w-5 h-5 ${
-                              activeFeature === idx ? 'text-white' : 'text-orange-500'
-                            }`} />
+                            <FeatureIcon
+                              className={`w-5 h-5 ${
+                                activeFeature === idx
+                                  ? "text-white"
+                                  : "text-orange-500"
+                              }`}
+                            />
                             <div>
                               <div className="font-medium">{feature.name}</div>
-                              <div className={`text-sm ${
-                                activeFeature === idx ? 'text-white/80' : 'text-gray-500'
-                              }`}>
+                              <div
+                                className={`text-sm ${
+                                  activeFeature === idx
+                                    ? "text-white/80"
+                                    : "text-gray-500"
+                                }`}
+                              >
                                 {feature.description}
                               </div>
                             </div>
                           </div>
-                          <ArrowRight className={`w-4 h-4 transition-transform ${
-                            activeFeature === idx ? 'translate-x-1' : 'group-hover:translate-x-1'
-                          }`} />
+                          {/*<ArrowRight className={`w-4 h-4 transition-transform ${*/}
+                          {/*  activeFeature === idx ? 'translate-x-1' : 'group-hover:translate-x-1'*/}
+                          {/*}`} />*/}
                         </div>
                       </div>
                     );
@@ -201,29 +220,48 @@ export const HeroSection = () => {
   );
 };
 
-
-
 export const TrustValidationSection = () => {
   const [trustScore, setTrustScore] = useState(7);
   const [validations, setValidations] = useState([
-    { id: 1, content: "React Performance Tips", score: 8.5, validations: 234, category: "Development" },
-    { id: 2, content: "UI/UX Best Practices", score: 9.2, validations: 567, category: "Design" },
-    { id: 3, content: "API Security Guidelines", score: 7.8, validations: 189, category: "Security" }
+    {
+      id: 1,
+      content: "React Performance Tips",
+      score: 8.5,
+      validations: 234,
+      category: "Development",
+    },
+    {
+      id: 2,
+      content: "UI/UX Best Practices",
+      score: 9.2,
+      validations: 567,
+      category: "Design",
+    },
+    {
+      id: 3,
+      content: "API Security Guidelines",
+      score: 7.8,
+      validations: 189,
+      category: "Security",
+    },
   ]);
   const [selectedInsight, setSelectedInsight] = useState(null);
   const [showValidationTip, setShowValidationTip] = useState(true);
 
   const handleValidation = (id, increment) => {
-    setValidations(prevValidations =>
-      prevValidations.map(validation =>
+    setValidations((prevValidations) =>
+      prevValidations.map((validation) =>
         validation.id === id
           ? {
-            ...validation,
-            validations: validation.validations + (increment ? 1 : -1),
-            score: Math.min(10, Math.max(0, validation.score + (increment ? 0.1 : -0.1)))
-          }
-          : validation
-      )
+              ...validation,
+              validations: validation.validations + (increment ? 1 : -1),
+              score: Math.min(
+                10,
+                Math.max(0, validation.score + (increment ? 0.1 : -0.1)),
+              ),
+            }
+          : validation,
+      ),
     );
   };
 
@@ -263,15 +301,18 @@ export const TrustValidationSection = () => {
             </h2>
 
             <p className="text-gray-600 dark:text-gray-300 mb-8">
-              Our innovative trust system ensures quality through community validation.
-              Share insights, validate others' contributions, and build your expertise score.
+              Our innovative trust system ensures quality through community
+              validation. Share insights, validate others' contributions, and
+              build your expertise score.
             </p>
 
             {/* Trust Score Demo */}
             <div className="p-6 bg-white/50 dark:bg-gray-800/50 rounded-xl backdrop-blur-sm mb-8">
               <div className="flex items-center justify-between mb-4">
                 <span className="font-medium">Your Trust Score</span>
-                <span className="text-2xl font-bold text-orange-500">{trustScore.toFixed(1)}/10</span>
+                <span className="text-2xl font-bold text-orange-500">
+                  {trustScore.toFixed(1)}/10
+                </span>
               </div>
               <div className="space-y-4">
                 <div className="flex gap-2">
@@ -280,8 +321,8 @@ export const TrustValidationSection = () => {
                       key={i}
                       className={`h-8 w-8 rounded-lg transition-all duration-300 ${
                         i < trustScore
-                          ? 'bg-gradient-to-r from-orange-500 to-amber-500 shadow-lg shadow-orange-500/20'
-                          : 'bg-gray-200 dark:bg-gray-700'
+                          ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-lg shadow-orange-500/20"
+                          : "bg-gray-200 dark:bg-gray-700"
                       }`}
                       onClick={() => setTrustScore(i + 1)}
                     />
@@ -299,11 +340,18 @@ export const TrustValidationSection = () => {
                 { value: "500K+", label: "Verified Users" },
                 { value: "95%", label: "Accuracy Rate" },
                 { value: "1M+", label: "Validations" },
-                { value: "4.8/5", label: "Trust Score" }
+                { value: "4.8/5", label: "Trust Score" },
               ].map((metric, idx) => (
-                <div key={idx} className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg backdrop-blur-sm">
-                  <div className="text-2xl font-bold text-orange-500 mb-1">{metric.value}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">{metric.label}</div>
+                <div
+                  key={idx}
+                  className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg backdrop-blur-sm"
+                >
+                  <div className="text-2xl font-bold text-orange-500 mb-1">
+                    {metric.value}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    {metric.label}
+                  </div>
                 </div>
               ))}
             </div>
@@ -328,7 +376,9 @@ export const TrustValidationSection = () => {
                 <div
                   key={validation.id}
                   className={`p-6 bg-white/50 dark:bg-gray-800/50 rounded-xl backdrop-blur-sm border border-white/20 transition-all duration-300 ${
-                    selectedInsight === validation.id ? 'ring-2 ring-orange-500' : ''
+                    selectedInsight === validation.id
+                      ? "ring-2 ring-orange-500"
+                      : ""
                   }`}
                   onClick={() => setSelectedInsight(validation.id)}
                 >
@@ -376,9 +426,6 @@ export const TrustValidationSection = () => {
   );
 };
 
-
-
-
 // micro learning
 export const TipCard = ({ tip, onVote }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -414,7 +461,9 @@ export const TipCard = ({ tip, onVote }) => {
       {/* Tip Content */}
       <div className="p-4">
         <h3 className="font-medium mb-2">{tip.title}</h3>
-        <p className={`text-gray-600 dark:text-gray-300 ${!isExpanded ? 'line-clamp-2' : ''}`}>
+        <p
+          className={`text-gray-600 dark:text-gray-300 ${!isExpanded ? "line-clamp-2" : ""}`}
+        >
           {tip.content}
         </p>
         {tip.content.length > 100 && (
@@ -422,7 +471,7 @@ export const TipCard = ({ tip, onVote }) => {
             className="text-orange-500 text-sm mt-2 hover:text-orange-600"
             onClick={() => setIsExpanded(!isExpanded)}
           >
-            {isExpanded ? 'Show less' : 'Read more'}
+            {isExpanded ? "Show less" : "Read more"}
           </button>
         )}
       </div>
@@ -446,16 +495,20 @@ export const TipCard = ({ tip, onVote }) => {
         <div className="flex items-center gap-3">
           <button
             className="flex items-center gap-1 text-sm hover:text-orange-500"
-            onClick={() => onVote(tip.id, 'up')}
+            onClick={() => onVote(tip.id, "up")}
           >
-            <ThumbsUp className={`w-4 h-4 ${tip.userVote === 'up' ? 'text-orange-500 fill-orange-500' : ''}`} />
+            <ThumbsUp
+              className={`w-4 h-4 ${tip.userVote === "up" ? "text-orange-500 fill-orange-500" : ""}`}
+            />
             <span>{tip.upvotes}</span>
           </button>
           <button
             className="flex items-center gap-1 text-sm hover:text-orange-500"
-            onClick={() => onVote(tip.id, 'down')}
+            onClick={() => onVote(tip.id, "down")}
           >
-            <ThumbsDown className={`w-4 h-4 ${tip.userVote === 'down' ? 'text-orange-500 fill-orange-500' : ''}`} />
+            <ThumbsDown
+              className={`w-4 h-4 ${tip.userVote === "down" ? "text-orange-500 fill-orange-500" : ""}`}
+            />
             <span>{tip.downvotes}</span>
           </button>
           <button className="flex items-center gap-1 text-sm hover:text-orange-500">
@@ -476,10 +529,12 @@ export const TipCard = ({ tip, onVote }) => {
             )}
           </button>
           <button
-            className={`hover:text-orange-500 ${isSaved ? 'text-orange-500' : ''}`}
+            className={`hover:text-orange-500 ${isSaved ? "text-orange-500" : ""}`}
             onClick={() => setIsSaved(!isSaved)}
           >
-            <BookMarked className={`w-4 h-4 ${isSaved ? 'fill-orange-500' : ''}`} />
+            <BookMarked
+              className={`w-4 h-4 ${isSaved ? "fill-orange-500" : ""}`}
+            />
           </button>
         </div>
       </div>
@@ -495,12 +550,13 @@ export const MicroLearningSection = () => {
       timeAgo: "2h ago",
       category: "React",
       title: "Quick Tip: UseEffect Cleanup",
-      content: "Always remember to clean up your useEffect hooks to prevent memory leaks. Return a cleanup function that removes event listeners, subscriptions, or timers.",
+      content:
+        "Always remember to clean up your useEffect hooks to prevent memory leaks. Return a cleanup function that removes event listeners, subscriptions, or timers.",
       upvotes: 234,
       downvotes: 12,
       comments: 45,
       hasMedia: true,
-      userVote: null
+      userVote: null,
     },
     {
       id: 2,
@@ -508,12 +564,13 @@ export const MicroLearningSection = () => {
       timeAgo: "5h ago",
       category: "UI/UX",
       title: "Microinteractions Matter",
-      content: "Small animations and transitions can greatly improve user experience. Add subtle feedback to user actions like hover states and button clicks to make your interface feel more responsive and engaging.",
+      content:
+        "Small animations and transitions can greatly improve user experience. Add subtle feedback to user actions like hover states and button clicks to make your interface feel more responsive and engaging.",
       upvotes: 189,
       downvotes: 8,
       comments: 32,
       hasMedia: false,
-      userVote: null
+      userVote: null,
     },
     {
       id: 3,
@@ -521,39 +578,48 @@ export const MicroLearningSection = () => {
       timeAgo: "1d ago",
       category: "JavaScript",
       title: "Array Method Shorthand",
-      content: "Use array destructuring to swap variables without a temporary variable: [a, b] = [b, a]. This clean syntax makes your code more readable and efficient.",
+      content:
+        "Use array destructuring to swap variables without a temporary variable: [a, b] = [b, a]. This clean syntax makes your code more readable and efficient.",
       upvotes: 421,
       downvotes: 15,
       comments: 67,
       hasMedia: true,
-      userVote: null
-    }
+      userVote: null,
+    },
   ]);
 
   const handleVote = (tipId, voteType) => {
-    setTips(prevTips =>
-      prevTips.map(tip => {
+    setTips((prevTips) =>
+      prevTips.map((tip) => {
         if (tip.id === tipId) {
           const oldVote = tip.userVote;
           const newVote = oldVote === voteType ? null : voteType;
 
           return {
             ...tip,
-            upvotes: tip.upvotes + (
-              voteType === 'up'
-                ? (oldVote === 'up' ? -1 : 1)
-                : (oldVote === 'up' ? -1 : 0)
-            ),
-            downvotes: tip.downvotes + (
-              voteType === 'down'
-                ? (oldVote === 'down' ? -1 : 1)
-                : (oldVote === 'down' ? -1 : 0)
-            ),
-            userVote: newVote
+            upvotes:
+              tip.upvotes +
+              (voteType === "up"
+                ? oldVote === "up"
+                  ? -1
+                  : 1
+                : oldVote === "up"
+                  ? -1
+                  : 0),
+            downvotes:
+              tip.downvotes +
+              (voteType === "down"
+                ? oldVote === "down"
+                  ? -1
+                  : 1
+                : oldVote === "down"
+                  ? -1
+                  : 0),
+            userVote: newVote,
           };
         }
         return tip;
-      })
+      }),
     );
   };
 
@@ -585,11 +651,18 @@ export const MicroLearningSection = () => {
                 { value: "50K+", label: "Daily Tips" },
                 { value: "92%", label: "Found Helpful" },
                 { value: "15sec", label: "Avg. Length" },
-                { value: "1M+", label: "Learners" }
+                { value: "1M+", label: "Learners" },
               ].map((metric, idx) => (
-                <div key={idx} className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg backdrop-blur-sm">
-                  <div className="text-2xl font-bold text-orange-500 mb-1">{metric.value}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">{metric.label}</div>
+                <div
+                  key={idx}
+                  className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg backdrop-blur-sm"
+                >
+                  <div className="text-2xl font-bold text-orange-500 mb-1">
+                    {metric.value}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    {metric.label}
+                  </div>
                 </div>
               ))}
             </div>
@@ -597,12 +670,8 @@ export const MicroLearningSection = () => {
 
           {/* Right Column - Tips Feed */}
           <div className="space-y-4">
-            {tips.map(tip => (
-              <TipCard
-                key={tip.id}
-                tip={tip}
-                onVote={handleVote}
-              />
+            {tips.map((tip) => (
+              <TipCard key={tip.id} tip={tip} onVote={handleVote} />
             ))}
           </div>
         </div>
@@ -610,14 +679,6 @@ export const MicroLearningSection = () => {
     </section>
   );
 };
-
-
-
-
-
-
-
-
 
 export const FactCheckDemo = () => {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -630,7 +691,7 @@ export const FactCheckDemo = () => {
     setIsVerifying(true);
     setTimeout(() => {
       setUserAction(type);
-      setVerificationCount(prev => type === 'verify' ? prev + 1 : prev);
+      setVerificationCount((prev) => (type === "verify" ? prev + 1 : prev));
       setIsVerifying(false);
     }, 1000);
   };
@@ -651,7 +712,8 @@ export const FactCheckDemo = () => {
           </h2>
 
           <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Experience how our community verifies claims through evidence-based consensus.
+            Experience how our community verifies claims through evidence-based
+            consensus.
           </p>
         </div>
 
@@ -666,7 +728,9 @@ export const FactCheckDemo = () => {
               </span>
               <span className="flex items-center gap-1 text-sm">
                 <Users className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-600">{verificationCount} verifications</span>
+                <span className="text-gray-600">
+                  {verificationCount} verifications
+                </span>
               </span>
             </div>
             <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600">
@@ -678,47 +742,63 @@ export const FactCheckDemo = () => {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-start gap-4 mb-6">
               {/*fact check*/}
-              <svg width="2500" height="2500" fill="none" xmlns="http://www.w3.org/2000/svg" strokeWidth="1.5"
-                   className="h-10 w-10"
-                   viewBox="-0.17090198558635983 0.482230148717937 41.14235318283891 40.0339509076386">
-                <text x="-9999" y="-9999">ChatGPT</text>
+              <svg
+                width="2500"
+                height="2500"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                strokeWidth="1.5"
+                className="h-10 w-10"
+                viewBox="-0.17090198558635983 0.482230148717937 41.14235318283891 40.0339509076386"
+              >
+                <text x="-9999" y="-9999">
+                  ChatGPT
+                </text>
                 <path
                   d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835A9.964 9.964 0 0 0 18.306.5a10.079 10.079 0 0 0-9.614 6.977 9.967 9.967 0 0 0-6.664 4.834 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 7.516 3.35 10.078 10.078 0 0 0 9.617-6.981 9.967 9.967 0 0 0 6.663-4.834 10.079 10.079 0 0 0-1.243-11.813zM22.498 37.886a7.474 7.474 0 0 1-4.799-1.735c.061-.033.168-.091.237-.134l7.964-4.6a1.294 1.294 0 0 0 .655-1.134V19.054l3.366 1.944a.12.12 0 0 1 .066.092v9.299a7.505 7.505 0 0 1-7.49 7.496zM6.392 31.006a7.471 7.471 0 0 1-.894-5.023c.06.036.162.099.237.141l7.964 4.6a1.297 1.297 0 0 0 1.308 0l9.724-5.614v3.888a.12.12 0 0 1-.048.103l-8.051 4.649a7.504 7.504 0 0 1-10.24-2.744zM4.297 13.62A7.469 7.469 0 0 1 8.2 10.333c0 .068-.004.19-.004.274v9.201a1.294 1.294 0 0 0 .654 1.132l9.723 5.614-3.366 1.944a.12.12 0 0 1-.114.01L7.04 23.856a7.504 7.504 0 0 1-2.743-10.237zm27.658 6.437l-9.724-5.615 3.367-1.943a.121.121 0 0 1 .113-.01l8.052 4.648a7.498 7.498 0 0 1-1.158 13.528v-9.476a1.293 1.293 0 0 0-.65-1.132zm3.35-5.043c-.059-.037-.162-.099-.236-.141l-7.965-4.6a1.298 1.298 0 0 0-1.308 0l-9.723 5.614v-3.888a.12.12 0 0 1 .048-.103l8.05-4.645a7.497 7.497 0 0 1 11.135 7.763zm-21.063 6.929l-3.367-1.944a.12.12 0 0 1-.065-.092v-9.299a7.497 7.497 0 0 1 12.293-5.756 6.94 6.94 0 0 0-.236.134l-7.965 4.6a1.294 1.294 0 0 0-.654 1.132l-.006 11.225zm1.829-3.943l4.33-2.501 4.332 2.5v5l-4.331 2.5-4.331-2.5V18z"
-                  fill="currentColor" />
+                  fill="currentColor"
+                />
               </svg>
               <div>
                 <h3 className="text-xl font-semibold mb-2">
-                  "ChatGPT helped researchers discover a new antibacterial molecule"
+                  "ChatGPT helped researchers discover a new antibacterial
+                  molecule"
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  A recent study claims that AI language model ChatGPT assisted in identifying a novel antibacterial
-                  compound effective against drug-resistant bacteria.
+                  A recent study claims that AI language model ChatGPT assisted
+                  in identifying a novel antibacterial compound effective
+                  against drug-resistant bacteria.
                 </p>
               </div>
             </div>
 
             {/* Evidence Section */}
             <div className="space-y-4">
-              <div className="font-medium text-gray-900 dark:text-gray-100">Supporting Evidence:</div>
+              <div className="font-medium text-gray-900 dark:text-gray-100">
+                Supporting Evidence:
+              </div>
               {[
                 {
                   id: 1,
                   type: "research",
-                  content: "Published in Nature Journal (Feb 2024): Study demonstrates AI-assisted discovery of new antibacterial molecule.",
-                  link: "View Publication"
+                  content:
+                    "Published in Nature Journal (Feb 2024): Study demonstrates AI-assisted discovery of new antibacterial molecule.",
+                  link: "View Publication",
                 },
                 {
                   id: 2,
                   type: "data",
-                  content: "MIT Laboratory tests confirm 89% effectiveness against resistant strains.",
-                  link: "View Lab Results"
+                  content:
+                    "MIT Laboratory tests confirm 89% effectiveness against resistant strains.",
+                  link: "View Lab Results",
                 },
                 {
                   id: 3,
                   type: "expert",
-                  content: "Verified by leading microbiologists from three independent institutions.",
-                  link: "Expert Reviews"
-                }
+                  content:
+                    "Verified by leading microbiologists from three independent institutions.",
+                  link: "Expert Reviews",
+                },
               ].map((evidence) => (
                 <div
                   key={evidence.id}
@@ -755,11 +835,11 @@ export const FactCheckDemo = () => {
               <div className="flex items-center gap-3">
                 <button
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    userAction === 'verify'
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                  } ${isVerifying ? 'opacity-50 cursor-wait' : ''}`}
-                  onClick={() => !isVerifying && handleVerify('verify')}
+                    userAction === "verify"
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-600"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  } ${isVerifying ? "opacity-50 cursor-wait" : ""}`}
+                  onClick={() => !isVerifying && handleVerify("verify")}
                   disabled={isVerifying}
                 >
                   <CheckCircle className="w-5 h-5" />
@@ -767,11 +847,11 @@ export const FactCheckDemo = () => {
                 </button>
                 <button
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    userAction === 'dispute'
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                  } ${isVerifying ? 'opacity-50 cursor-wait' : ''}`}
-                  onClick={() => !isVerifying && handleVerify('dispute')}
+                    userAction === "dispute"
+                      ? "bg-red-100 dark:bg-red-900/30 text-red-600"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  } ${isVerifying ? "opacity-50 cursor-wait" : ""}`}
+                  onClick={() => !isVerifying && handleVerify("dispute")}
                   disabled={isVerifying}
                 >
                   <AlertCircle className="w-5 h-5" />
@@ -799,13 +879,22 @@ export const FactCheckDemo = () => {
               <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                 <div className="text-sm font-medium mb-2">Source Links:</div>
                 <div className="space-y-2">
-                  <a href="#" className="text-orange-500 hover:text-orange-600 text-sm block">
+                  <a
+                    href="#"
+                    className="text-orange-500 hover:text-orange-600 text-sm block"
+                  >
                     Nature Journal Publication
                   </a>
-                  <a href="#" className="text-orange-500 hover:text-orange-600 text-sm block">
+                  <a
+                    href="#"
+                    className="text-orange-500 hover:text-orange-600 text-sm block"
+                  >
                     MIT Laboratory Results
                   </a>
-                  <a href="#" className="text-orange-500 hover:text-orange-600 text-sm block">
+                  <a
+                    href="#"
+                    className="text-orange-500 hover:text-orange-600 text-sm block"
+                  >
                     Expert Review Panel
                   </a>
                 </div>
@@ -818,12 +907,10 @@ export const FactCheckDemo = () => {
   );
 };
 
-
-
-
 export const FinalSection = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -834,8 +921,7 @@ export const FinalSection = () => {
   return (
     <div className="relative pt-24 overflow-hidden">
       {/* Background Elements */}
-      <div
-        className="absolute inset-0 bg-gradient-to-b from-amber-50/50 to-orange-50/50 dark:from-gray-900 dark:to-gray-800" />
+      <div className="absolute inset-0 bg-gradient-to-b from-amber-50/50 to-orange-50/50 dark:from-gray-900 dark:to-gray-800" />
       <div className="absolute inset-0">
         {[...Array(10)].map((_, i) => (
           <div
@@ -848,7 +934,7 @@ export const FinalSection = () => {
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
               animationDuration: `${Math.random() * 10 + 10}s`,
-              animationDelay: `${Math.random() * -20}s`
+              animationDelay: `${Math.random() * -20}s`,
             }}
           />
         ))}
@@ -857,8 +943,7 @@ export const FinalSection = () => {
       <div className="relative max-w-7xl mx-auto px-6">
         {/* Main Content */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div
-            className="inline-flex items-center px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-medium mb-6">
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4 mr-2" />
             Join the Revolution
           </div>
@@ -870,27 +955,18 @@ export const FinalSection = () => {
           </h2>
 
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            Join thousands of early adopters shaping the future of online communities.
-            Get exclusive access and special perks when we launch.
+            Join thousands of early adopters shaping the future of online
+            communities. Get exclusive access and special perks when we launch.
           </p>
 
           {/* Waitlist Form */}
           <div className="max-w-md mx-auto">
-            <form onSubmit={handleSubmit} className="relative">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="w-full px-6 py-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-orange-500/20 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg text-white font-medium hover:scale-105 transition-transform"
-              >
-                Join Waitlist
-              </button>
-            </form>
+            <button
+              onClick={() => router.push("/waitlist")}
+              className="w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl text-white font-medium hover:scale-105 transition-transform backdrop-blur-sm"
+            >
+              Join Waitlist
+            </button>
           </div>
         </div>
 
@@ -900,18 +976,21 @@ export const FinalSection = () => {
             {
               icon: Shield,
               title: "Early Access",
-              description: "Be among the first to experience our revolutionary platform"
+              description:
+                "Be among the first to experience our revolutionary platform",
             },
             {
               icon: Star,
               title: "Founding Member Benefits",
-              description: "Exclusive features and rewards for our early supporters"
+              description:
+                "Exclusive features and rewards for our early supporters",
             },
             {
               icon: Users,
               title: "Community Impact",
-              description: "Help shape the future of online discourse and engagement"
-            }
+              description:
+                "Help shape the future of online discourse and engagement",
+            },
           ].map((feature, idx) => {
             const Icon = feature.icon;
             return (
@@ -921,21 +1000,17 @@ export const FinalSection = () => {
               >
                 <Icon className="w-8 h-8 text-orange-500 mb-4" />
                 <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600 dark:text-gray-300">{feature.description}</p>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {feature.description}
+                </p>
               </div>
             );
           })}
         </div>
-
-
       </div>
-      <div
-        className="pb-10 pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-600 dark:text-gray-400">
+      <div className="pb-10 pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-600 dark:text-gray-400">
         © 2024 Your Platform. All rights reserved.
       </div>
-
-
     </div>
   );
 };
-

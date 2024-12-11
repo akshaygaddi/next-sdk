@@ -1,21 +1,28 @@
 // RoomSidebar.tsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { createClient } from '@/utils/supabase/client';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,DialogTrigger  } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Search, Plus, Lock } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import RoomCreationForm from '@/components/RoomCreationForm';
-import JoinPrivateRoom from '@/components/join-private-room';
-import RoomCard from '@/components/room-card';
+import { createClient } from "@/utils/supabase/client";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Search, Plus, Lock } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import RoomCreationForm from "@/components/RoomCreationForm";
+import JoinPrivateRoom from "@/components/join-private-room";
+import RoomCard from "@/components/room-card";
 
 const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningPrivate, setIsJoiningPrivate] = useState(false);
@@ -30,31 +37,30 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
     const initialize = async () => {
       try {
         // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         setCurrentUserId(user?.id || null);
 
         // Fetch rooms and participants in parallel
         const [roomsData, participantsData] = await Promise.all([
+          supabase.from("rooms").select("*").eq("is_active", true),
           supabase
-            .from('rooms')
-            .select('*')
-            .eq('is_active', true),
-          supabase
-            .from('room_participants')
-            .select('room_id')
-            .eq('user_id', user?.id)
+            .from("room_participants")
+            .select("room_id")
+            .eq("user_id", user?.id),
         ]);
 
         if (roomsData.error) throw roomsData.error;
         if (participantsData.error) throw participantsData.error;
 
         setRooms(roomsData.data || []);
-        setJoinedRooms(participantsData.data?.map(p => p.room_id) || []);
+        setJoinedRooms(participantsData.data?.map((p) => p.room_id) || []);
       } catch (error) {
         toast({
           title: "Error",
           description: "Failed to load rooms",
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         // Only set initialLoading to false if this is the first render
@@ -69,13 +75,14 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
 
     // Set up real-time subscription for rooms
     const roomSubscription = supabase
-      .channel('rooms_changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'rooms' },
+      .channel("rooms_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "rooms" },
         () => {
           // Don't show loading state for real-time updates
           initialize();
-        }
+        },
       )
       .subscribe();
 
@@ -85,26 +92,24 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
   }, []);
   const handleJoinRoom = async (room) => {
     try {
-      const { error } = await supabase
-        .from('room_participants')
-        .insert({
-          room_id: room.id,
-          user_id: currentUserId
-        });
+      const { error } = await supabase.from("room_participants").insert({
+        room_id: room.id,
+        user_id: currentUserId,
+      });
 
       if (error) throw error;
 
-      setJoinedRooms(prev => [...prev, room.id]);
+      setJoinedRooms((prev) => [...prev, room.id]);
       onRoomSelect(room); // This will show the RoomChat
 
       toast({
-        description: "Joined room successfully"
+        description: "Joined room successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to join room",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -112,36 +117,33 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
   const handleLeaveRoom = async (roomId) => {
     try {
       const { error } = await supabase
-        .from('room_participants')
+        .from("room_participants")
         .delete()
-        .eq('room_id', roomId)
-        .eq('user_id', currentUserId);
+        .eq("room_id", roomId)
+        .eq("user_id", currentUserId);
 
       if (error) throw error;
 
-      setJoinedRooms(prev => prev.filter(id => id !== roomId));
+      setJoinedRooms((prev) => prev.filter((id) => id !== roomId));
       if (selectedRoom?.id === roomId) {
         onRoomSelect(null);
       }
 
       toast({
-        description: "Left room successfully"
+        description: "Left room successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to leave room",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   const handleTerminateRoom = async (room) => {
     try {
-      const { error } = await supabase
-        .from('rooms')
-        .delete()
-        .eq('id', room.id);
+      const { error } = await supabase.from("rooms").delete().eq("id", room.id);
 
       if (error) throw error;
 
@@ -150,21 +152,23 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
       }
 
       toast({
-        description: "Room deleted successfully"
+        description: "Room deleted successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete room",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
   // Filter rooms based on search and visibility
-  const filteredRooms = rooms.filter(room => {
-    const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredRooms = rooms.filter((room) => {
+    const matchesSearch = room.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     const isVisible =
-      room.type === 'public' ||
+      room.type === "public" ||
       room.created_by === currentUserId ||
       joinedRooms.includes(room.id);
     return matchesSearch && isVisible;
@@ -172,7 +176,7 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
 
   const LoadingSkeleton = () => (
     <div className="space-y-2">
-      {[1, 2, 3].map(i => (
+      {[1, 2, 3].map((i) => (
         <div key={i} className="h-24 animate-pulse bg-muted rounded-lg" />
       ))}
     </div>
@@ -192,13 +196,15 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create New Room</DialogTitle>
-                <DialogDescription>Create a new chat room and invite others</DialogDescription>
+                <DialogDescription>
+                  Create a new chat room and invite others
+                </DialogDescription>
               </DialogHeader>
               <RoomCreationForm
                 onRoomCreated={(room) => {
                   onRoomSelect(room);
                   setIsCreatingRoom(false);
-                  setJoinedRooms(prev => [...prev, room.id]);
+                  setJoinedRooms((prev) => [...prev, room.id]);
                 }}
                 onClose={() => setIsCreatingRoom(false)}
               />
@@ -214,12 +220,14 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Join Private Room</DialogTitle>
-                <DialogDescription>Enter room code and password to join</DialogDescription>
+                <DialogDescription>
+                  Enter room code and password to join
+                </DialogDescription>
               </DialogHeader>
               <JoinPrivateRoom
                 onRoomSelect={(room) => {
                   onRoomSelect(room);
-                  setJoinedRooms(prev => [...prev, room.id]);
+                  setJoinedRooms((prev) => [...prev, room.id]);
                   setIsJoiningPrivate(false);
                 }}
                 onClose={() => setIsJoiningPrivate(false)}
@@ -252,7 +260,7 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
             {initialLoading ? (
               <LoadingSkeleton />
             ) : filteredRooms.length > 0 ? (
-              filteredRooms.map(room => (
+              filteredRooms.map((room) => (
                 <RoomCard
                   key={room.id}
                   room={room}
@@ -266,7 +274,8 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
             ) : (
               <Alert>
                 <AlertDescription>
-                  No rooms found. Try adjusting your search or create a new room.
+                  No rooms found. Try adjusting your search or create a new
+                  room.
                 </AlertDescription>
               </Alert>
             )}
@@ -275,10 +284,11 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
           <TabsContent value="joined" className="mt-2 space-y-2">
             {initialLoading ? (
               <LoadingSkeleton />
-            ) : filteredRooms.filter(room => joinedRooms.includes(room.id)).length > 0 ? (
+            ) : filteredRooms.filter((room) => joinedRooms.includes(room.id))
+                .length > 0 ? (
               filteredRooms
-                .filter(room => joinedRooms.includes(room.id))
-                .map(room => (
+                .filter((room) => joinedRooms.includes(room.id))
+                .map((room) => (
                   <RoomCard
                     key={room.id}
                     room={room}

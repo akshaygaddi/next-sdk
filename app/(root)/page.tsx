@@ -1,14 +1,27 @@
-'use client'
+"use client";
 
-
-
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
-  Users, Shield, Brain, Rocket, MessageSquare, Trophy,
-  Share2, BookOpen, ChevronRight, ArrowRight, Globe,
-  Code, Lock, Zap, GitBranch, Layout, Video, FileText
-} from 'lucide-react';
+  Users,
+  Shield,
+  Brain,
+  Rocket,
+  MessageSquare,
+  Trophy,
+  Share2,
+  BookOpen,
+  ChevronRight,
+  ArrowRight,
+  Globe,
+  Code,
+  Lock,
+  Zap,
+  GitBranch,
+  Layout,
+  Video,
+  FileText,
+} from "lucide-react";
 
 const LandingPage = () => {
   const [activeFeature, setActiveFeature] = useState(0);
@@ -23,54 +36,64 @@ const LandingPage = () => {
     {
       icon: <Code className="w-8 h-8" />,
       title: "Smart Code Handling",
-      description: "Automatic syntax highlighting, code formatting, and language detection. Share and discuss code effortlessly."
+      description:
+        "Automatic syntax highlighting, code formatting, and language detection. Share and discuss code effortlessly.",
     },
     {
       icon: <GitBranch className="w-8 h-8" />,
       title: "GitHub Integration",
-      description: "Direct GitHub links transform into rich previews. Discuss PRs and issues seamlessly."
+      description:
+        "Direct GitHub links transform into rich previews. Discuss PRs and issues seamlessly.",
     },
     {
       icon: <Layout className="w-8 h-8" />,
       title: "Rich Media Support",
-      description: "Links automatically expand into rich previews. Share content without leaving the discussion."
+      description:
+        "Links automatically expand into rich previews. Share content without leaving the discussion.",
     },
     {
       icon: <Video className="w-8 h-8" />,
       title: "Quick Polls & Voting",
-      description: "Create instant polls for group decisions. Get real-time feedback from your community."
+      description:
+        "Create instant polls for group decisions. Get real-time feedback from your community.",
     },
     {
       icon: <FileText className="w-8 h-8" />,
       title: "Document Collaboration",
-      description: "Real-time collaborative editing. Perfect for documentation and shared notes."
+      description:
+        "Real-time collaborative editing. Perfect for documentation and shared notes.",
     },
     {
       icon: <MessageSquare className="w-8 h-8" />,
       title: "Focused Discussions",
-      description: "Threaded conversations keep topics organized. Set time limits for focused sessions."
-    }
+      description:
+        "Threaded conversations keep topics organized. Set time limits for focused sessions.",
+    },
   ];
 
   const upcomingFeatures = [
     {
       icon: <Trophy className="w-12 h-12" />,
       title: "Battle Arena",
-      description: "Structure debates with team-based discussions. Real-time consensus tracking and visual engagement metrics.",
-      comingSoon: "Transform how your community compares ideas and reaches decisions."
+      description:
+        "Structure debates with team-based discussions. Real-time consensus tracking and visual engagement metrics.",
+      comingSoon:
+        "Transform how your community compares ideas and reaches decisions.",
     },
     {
       icon: <Brain className="w-12 h-12" />,
       title: "Truth & Trust System",
-      description: "Community-driven knowledge validation with expert verification. Build reliable information ecosystems.",
-      comingSoon: "Create a trusted knowledge base within your community."
+      description:
+        "Community-driven knowledge validation with expert verification. Build reliable information ecosystems.",
+      comingSoon: "Create a trusted knowledge base within your community.",
     },
     {
       icon: <Share2 className="w-12 h-12" />,
       title: "Knowledge Validation",
-      description: "Fact-checking system with evidence-backed claims. Community voting on most convincing arguments.",
-      comingSoon: "Ensure quality information flows through your community."
-    }
+      description:
+        "Fact-checking system with evidence-backed claims. Community voting on most convincing arguments.",
+      comingSoon: "Ensure quality information flows through your community.",
+    },
   ];
 
   return (
@@ -90,8 +113,8 @@ const LandingPage = () => {
               Come Alive
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">
-              Experience our revolutionary Rooms feature today, while we build the future of
-              community engagement.
+              Experience our revolutionary Rooms feature today, while we build
+              the future of community engagement.
             </p>
 
             <motion.button
@@ -114,8 +137,8 @@ const LandingPage = () => {
               Rooms: Available Now
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Experience our feature-rich Rooms today. Built for developers, teams, and communities
-              who need more than just chat.
+              Experience our feature-rich Rooms today. Built for developers,
+              teams, and communities who need more than just chat.
             </p>
           </div>
 
@@ -149,9 +172,9 @@ const LandingPage = () => {
               Help Shape the Future
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              As a beta tester, your feedback will directly influence our platform's evolution.
-              Experience our Rooms feature today and help us build the next generation of
-              community features.
+              As a beta tester, your feedback will directly influence our
+              platform's evolution. Experience our Rooms feature today and help
+              us build the next generation of community features.
             </p>
           </div>
 
@@ -163,15 +186,23 @@ const LandingPage = () => {
               <div className="flex items-start gap-4">
                 <Rocket className="w-6 h-6 text-orange-500 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-medium text-gray-800 dark:text-gray-100 mb-2">Early Access to Features</h4>
-                  <p className="text-gray-600 dark:text-gray-300">Be the first to try new features and shape their development</p>
+                  <h4 className="font-medium text-gray-800 dark:text-gray-100 mb-2">
+                    Early Access to Features
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Be the first to try new features and shape their development
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
                 <Users className="w-6 h-6 text-orange-500 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-medium text-gray-800 dark:text-gray-100 mb-2">Direct Impact</h4>
-                  <p className="text-gray-600 dark:text-gray-300">Your feedback directly influences feature development</p>
+                  <h4 className="font-medium text-gray-800 dark:text-gray-100 mb-2">
+                    Direct Impact
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Your feedback directly influences feature development
+                  </p>
                 </div>
               </div>
             </div>
@@ -187,8 +218,8 @@ const LandingPage = () => {
               What You're Waiting For
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Our upcoming features will revolutionize how communities interact, share knowledge,
-              and reach consensus.
+              Our upcoming features will revolutionize how communities interact,
+              share knowledge, and reach consensus.
             </p>
           </div>
 
@@ -230,8 +261,8 @@ const LandingPage = () => {
                 Join the Evolution
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-                Start with our powerful Rooms feature today, and be first in line for our
-                upcoming community innovations.
+                Start with our powerful Rooms feature today, and be first in
+                line for our upcoming community innovations.
               </p>
               <div className="flex flex-col items-center space-y-4">
                 <motion.button
@@ -243,7 +274,8 @@ const LandingPage = () => {
                   <ChevronRight className="w-5 h-5" />
                 </motion.button>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Join {waitlistCount.toLocaleString()} others waiting for access
+                  Join {waitlistCount.toLocaleString()} others waiting for
+                  access
                 </p>
               </div>
             </motion.div>

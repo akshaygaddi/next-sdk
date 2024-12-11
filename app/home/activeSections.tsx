@@ -38,8 +38,11 @@ import {
   Link,
   Globe,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { router } from "next/client";
 
 export const StartupLanding = () => {
+  const router = useRouter();
   const features = [
     {
       icon: MessageSquare,
@@ -94,11 +97,17 @@ export const StartupLanding = () => {
 
           {/* CTA Section */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <button className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300">
+            <button
+              onClick={() => router.push("/rooms")}
+              className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300"
+            >
               Try Smart Rooms Now
             </button>
-            <button className="w-full sm:w-auto px-8 py-3 bg-white dark:bg-gray-800 rounded-xl font-medium border border-gray-200 dark:border-gray-700 hover:border-orange-500/20 transition-all duration-300">
-              Join Waitlist
+            <button
+              onClick={() => router.push("/community")}
+              className="w-full sm:w-auto px-8 py-3 bg-white dark:bg-gray-800 rounded-xl font-medium border border-gray-200 dark:border-gray-700 hover:border-orange-500/20 transition-all duration-300"
+            >
+              Explore Community Features
             </button>
           </div>
         </div>
@@ -164,6 +173,7 @@ export const StartupLanding = () => {
                 {/* Action Button */}
                 <div className="mt-8">
                   <button
+                    onClick={() => router.push("/community")}
                     className={`group flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300
                       ${
                         feature.status === "live"
@@ -863,6 +873,7 @@ export const SmartRoomsShowcase = () => {
 };
 
 export const EnhancedCTA = () => {
+  const router = useRouter();
   return (
     <section className="relative py-20">
       {/* Background Elements */}
@@ -875,7 +886,7 @@ export const EnhancedCTA = () => {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-medium mb-6">
             <Star className="w-4 h-4" />
-            Join 10,000+ Early Adopters
+            Join Early Adopters
           </div>
 
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
@@ -896,7 +907,10 @@ export const EnhancedCTA = () => {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button className="group px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300">
+          <button
+            onClick={() => router.push("/rooms")}
+            className="group px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300"
+          >
             <span className="flex items-center gap-2">
               Get Started Now
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

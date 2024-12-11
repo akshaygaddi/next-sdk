@@ -1,7 +1,6 @@
-'use client'
+"use client";
 
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Rocket,
   Star,
@@ -13,7 +12,8 @@ import {
   ArrowRight,
   Trophy,
   Target,
-  Send, Menu
+  Send,
+  Menu,
 } from "lucide-react";
 
 const StartupCareersPage = () => {
@@ -25,20 +25,21 @@ const StartupCareersPage = () => {
       name: "Sarah Chen",
       role: "Started as Beta Tester",
       now: "Now Product Lead",
-      story: "Joined us in beta, shaped core features, now leading product strategy"
+      story:
+        "Joined us in beta, shaped core features, now leading product strategy",
     },
     {
       name: "Alex Rivera",
       role: "Former Marketing Intern",
       now: "Now Growth Manager",
-      story: "Drove early user acquisition strategies, grew with the platform"
+      story: "Drove early user acquisition strategies, grew with the platform",
     },
     {
       name: "Mia Patel",
       role: "Early Community Member",
       now: "Now Community Director",
-      story: "Built our first user communities, defining engagement strategies"
-    }
+      story: "Built our first user communities, defining engagement strategies",
+    },
   ];
 
   useEffect(() => {
@@ -55,20 +56,21 @@ const StartupCareersPage = () => {
       title: "Marketing Co-Founder",
       commitment: "Full-time",
       equity: "Significant equity stake",
-      description: "Be the driving force behind our growth strategy. Join as a co-founder and shape the future of online communities.",
+      description:
+        "Be the driving force behind our growth strategy. Join as a co-founder and shape the future of online communities.",
       badges: ["Leadership", "Equity", "Innovation"],
       requirements: [
         "Proven marketing expertise",
         "Startup mindset",
         "Ability to work without initial salary",
-        "Vision for community-driven platforms"
+        "Vision for community-driven platforms",
       ],
       benefits: [
         "Substantial equity ownership",
         "Leadership role",
         "Direct impact on company direction",
-        "Future team building opportunity"
-      ]
+        "Future team building opportunity",
+      ],
     },
     {
       id: 2,
@@ -76,20 +78,21 @@ const StartupCareersPage = () => {
       title: "Creative Design Lead",
       commitment: "Full-time",
       equity: "Early-employee equity",
-      description: "Own our visual identity and marketing campaigns as an early team member with significant equity.",
+      description:
+        "Own our visual identity and marketing campaigns as an early team member with significant equity.",
       badges: ["Design", "Creativity", "Growth"],
       requirements: [
         "Strong design portfolio",
         "Marketing campaign experience",
         "Ability to work for equity initially",
-        "Passion for innovation"
+        "Passion for innovation",
       ],
       benefits: [
         "Early-employee equity package",
         "Creative freedom",
         "Portfolio growth",
-        "Leadership opportunity"
-      ]
+        "Leadership opportunity",
+      ],
     },
     {
       id: 3,
@@ -97,20 +100,21 @@ const StartupCareersPage = () => {
       title: "Beta Tester & Community Builder",
       commitment: "Part-time",
       perks: "Early access & rewards",
-      description: "Shape our platform's future while building a vibrant community. Perfect for social media enthusiasts.",
+      description:
+        "Shape our platform's future while building a vibrant community. Perfect for social media enthusiasts.",
       badges: ["Community", "Influence", "Rewards"],
       requirements: [
         "Active social media presence",
         "Understanding of online communities",
         "10+ hours weekly commitment",
-        "Passion for innovation"
+        "Passion for innovation",
       ],
       benefits: [
         "Platform credits",
         "Early feature access",
         "Direct influence on product",
-        "Community leader status"
-      ]
+        "Community leader status",
+      ],
     },
     {
       id: 4,
@@ -118,21 +122,22 @@ const StartupCareersPage = () => {
       title: "UI/UX Design Intern",
       commitment: "Full-time Intern",
       duration: "3-6 months",
-      description: "Learn and grow while designing the future of social interaction. Opportunity for full-time role.",
+      description:
+        "Learn and grow while designing the future of social interaction. Opportunity for full-time role.",
       badges: ["Learning", "Portfolio", "Growth"],
       requirements: [
         "Basic design skills",
         "Understanding of UX principles",
         "Eagerness to learn",
-        "Available full-time"
+        "Available full-time",
       ],
       benefits: [
         "Mentorship",
         "Portfolio development",
         "Full-time potential",
-        "Skill development"
-      ]
-    }
+        "Skill development",
+      ],
+    },
   ];
 
   const OpportunityCard = ({ role }) => (
@@ -154,7 +159,9 @@ const StartupCareersPage = () => {
           <ArrowRight className="w-5 h-5 text-orange-500 transform group-hover:translate-x-1 transition-transform" />
         </div>
 
-        <p className="text-gray-600 dark:text-gray-400 mb-4">{role.description}</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
+          {role.description}
+        </p>
 
         <div className="flex flex-wrap gap-2">
           {role.badges.map((badge, index) => (
@@ -203,7 +210,9 @@ const StartupCareersPage = () => {
               {role.requirements.map((req, index) => (
                 <li key={index} className="flex items-start space-x-2">
                   <ChevronRight className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-700 dark:text-gray-300">{req}</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {req}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -218,7 +227,9 @@ const StartupCareersPage = () => {
               {role.benefits.map((benefit, index) => (
                 <li key={index} className="flex items-start space-x-2">
                   <ChevronRight className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-700 dark:text-gray-300">{benefit}</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {benefit}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -242,7 +253,9 @@ const StartupCareersPage = () => {
           <div className="text-center">
             <div className="inline-flex items-center space-x-2 bg-white/80 dark:bg-gray-900/80 rounded-full px-4 py-2 mb-6">
               <Rocket className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium">Join Our Founding Journey</span>
+              <span className="text-sm font-medium">
+                Join Our Founding Journey
+              </span>
             </div>
 
             <h1 className="text-4xl md:text-7xl font-bold mb-6">
@@ -254,7 +267,8 @@ const StartupCareersPage = () => {
             </h1>
 
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-              Join us at the ground floor. Shape the product, own your impact, and grow with us.
+              Join us at the ground floor. Shape the product, own your impact,
+              and grow with us.
             </p>
           </div>
         </div>
@@ -266,7 +280,8 @@ const StartupCareersPage = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Why Join Early?</h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Be part of something big from the beginning. We're looking for passionate individuals who believe in our vision.
+              Be part of something big from the beginning. We're looking for
+              passionate individuals who believe in our vision.
             </p>
           </div>
 
@@ -275,7 +290,8 @@ const StartupCareersPage = () => {
               <Sparkles className="w-8 h-8 text-orange-500 mb-4" />
               <h3 className="text-xl font-semibold mb-2">Equity Over Salary</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Join for the ownership. Early team members receive significant equity packages instead of initial salary.
+                Join for the ownership. Early team members receive significant
+                equity packages instead of initial salary.
               </p>
             </div>
 
@@ -283,7 +299,8 @@ const StartupCareersPage = () => {
               <Lightbulb className="w-8 h-8 text-orange-500 mb-4" />
               <h3 className="text-xl font-semibold mb-2">Shape The Product</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Direct influence on product decisions. Your voice matters in shaping our platform's future.
+                Direct influence on product decisions. Your voice matters in
+                shaping our platform's future.
               </p>
             </div>
 
@@ -291,7 +308,8 @@ const StartupCareersPage = () => {
               <Users className="w-8 h-8 text-orange-500 mb-4" />
               <h3 className="text-xl font-semibold mb-2">Grow With Us</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Start as an intern or beta tester, grow into leadership. We promote from within.
+                Start as an intern or beta tester, grow into leadership. We
+                promote from within.
               </p>
             </div>
           </div>
@@ -303,7 +321,7 @@ const StartupCareersPage = () => {
         <h2 className="text-3xl font-bold mb-12">Open Opportunities</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {opportunities.map(role => (
+          {opportunities.map((role) => (
             <OpportunityCard key={role.id} role={role} />
           ))}
         </div>
@@ -320,7 +338,8 @@ const StartupCareersPage = () => {
                 </span>
               </h2>
               <p className="text-xl mb-8 text-gray-600 dark:text-gray-400">
-                Be among the first to shape our platform. Join our beta testing program and help define the future of online communities.
+                Be among the first to shape our platform. Join our beta testing
+                program and help define the future of online communities.
               </p>
 
               <div className="space-y-4 mb-8">
@@ -330,7 +349,9 @@ const StartupCareersPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold">Early Access</h3>
-                    <p className="text-gray-600 dark:text-gray-400">Be the first to try new features</p>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Be the first to try new features
+                    </p>
                   </div>
                 </div>
 
@@ -340,7 +361,9 @@ const StartupCareersPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold">Direct Impact</h3>
-                    <p className="text-gray-600 dark:text-gray-400">Your feedback shapes the product</p>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Your feedback shapes the product
+                    </p>
                   </div>
                 </div>
 
@@ -350,7 +373,9 @@ const StartupCareersPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold">Growth Opportunity</h3>
-                    <p className="text-gray-600 dark:text-gray-400">Potential for full-time roles</p>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Potential for full-time roles
+                    </p>
                   </div>
                 </div>
               </div>
@@ -369,7 +394,8 @@ const StartupCareersPage = () => {
           Ready to Shape the Future?
         </h2>
         <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
-          Whether you're joining as a founder, intern, or beta tester, you'll be part of something revolutionary from day one.
+          Whether you're joining as a founder, intern, or beta tester, you'll be
+          part of something revolutionary from day one.
         </p>
         <button className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium px-8 py-3 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300">
           Explore Opportunities
@@ -378,7 +404,7 @@ const StartupCareersPage = () => {
 
       {selectedRole && <DetailModal role={selectedRole} />}
     </div>
-  ); }
+  );
+};
 
-
-export default StartupCareersPage
+export default StartupCareersPage;

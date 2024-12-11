@@ -14,11 +14,11 @@
     --popover-foreground: 24 10% 10%;
 
     /* Orange primary */
-    --primary: 24 95% 53%;  /* Orange-500 */
+    --primary: 24 95% 53%; /* Orange-500 */
     --primary-foreground: 0 0% 100%;
 
     /* Amber secondary */
-    --secondary: 45 93% 47%;  /* Amber-500 */
+    --secondary: 45 93% 47%; /* Amber-500 */
     --secondary-foreground: 0 0% 100%;
 
     /* Muted orange */
@@ -63,11 +63,11 @@
     --popover-foreground: 24 10% 95%;
 
     /* Orange primary in dark mode */
-    --primary: 24 95% 53%;  /* Orange-500 */
+    --primary: 24 95% 53%; /* Orange-500 */
     --primary-foreground: 0 0% 100%;
 
     /* Amber secondary in dark mode */
-    --secondary: 45 93% 47%;  /* Amber-500 */
+    --secondary: 45 93% 47%; /* Amber-500 */
     --secondary-foreground: 0 0% 100%;
 
     /* Muted orange in dark mode */
@@ -141,11 +141,18 @@
 
 /*login page */
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
 }
 
 .animate-shake {
-  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }

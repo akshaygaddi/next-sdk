@@ -17,7 +17,7 @@ export async function signup(formData: FormData) {
     // Return error information instead of redirecting
     return {
       error: signUpError.message,
-      success: false
+      success: false,
     };
   }
 

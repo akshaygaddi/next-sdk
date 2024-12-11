@@ -1,15 +1,15 @@
 // hooks/useRoomHooks.ts
-import { useMemo, useEffect, useCallback, useRef, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { useRoomStore } from '@/store/useRoomStore';
-import { toast } from '@/hooks/use-toast';
-import { debounce } from 'lodash';
+import { useMemo, useEffect, useCallback, useRef, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { useRoomStore } from "@/store/useRoomStore";
+import { toast } from "@/hooks/use-toast";
+import { debounce } from "lodash";
 
 // Enhanced Types
 interface Room {
   id: string;
   name: string;
-  type: 'public' | 'private';
+  type: "public" | "private";
   created_by: string;
   is_active: boolean;
   room_code: string;
@@ -29,69 +29,73 @@ interface RoomParticipant {
   user_id: string;
   joined_at: string;
   last_activity: string;
-  role: 'owner' | 'moderator' | 'member';
+  role: "owner" | "moderator" | "member";
   metadata?: Record<string, any>;
 }
 
 interface RoomFilters {
   searchQuery?: string;
-  type?: 'public' | 'private' | 'all';
+  type?: "public" | "private" | "all";
   showJoinedOnly?: boolean;
-  sortBy?: 'recent' | 'popular' | 'alphabetical' | 'expiringSoon';
-  status?: 'active' | 'expired' | 'all';
+  sortBy?: "recent" | "popular" | "alphabetical" | "expiringSoon";
+  status?: "active" | "expired" | "all";
 }
 
 // Utility Functions
-const createRoomChannel = (supabase: any, roomId: string, callbacks: {
-  onUpdate?: (payload: any) => void;
-  onDelete?: (payload: any) => void;
-  onParticipantChange?: (payload: any) => void;
-  onMessage?: (payload: any) => void;
-}) => {
+const createRoomChannel = (
+  supabase: any,
+  roomId: string,
+  callbacks: {
+    onUpdate?: (payload: any) => void;
+    onDelete?: (payload: any) => void;
+    onParticipantChange?: (payload: any) => void;
+    onMessage?: (payload: any) => void;
+  },
+) => {
   const channel = supabase.channel(`room:${roomId}`);
 
   if (callbacks.onUpdate || callbacks.onDelete) {
     channel.on(
-      'postgres_changes',
+      "postgres_changes",
       {
-        event: '*',
-        schema: 'public',
-        table: 'rooms',
-        filter: `id=eq.${roomId}`
+        event: "*",
+        schema: "public",
+        table: "rooms",
+        filter: `id=eq.${roomId}`,
       },
       (payload: any) => {
-        if (payload.eventType === 'UPDATE' && callbacks.onUpdate) {
+        if (payload.eventType === "UPDATE" && callbacks.onUpdate) {
           callbacks.onUpdate(payload);
-        } else if (payload.eventType === 'DELETE' && callbacks.onDelete) {
+        } else if (payload.eventType === "DELETE" && callbacks.onDelete) {
           callbacks.onDelete(payload);
         }
-      }
+      },
     );
   }
 
   if (callbacks.onParticipantChange) {
     channel.on(
-      'postgres_changes',
+      "postgres_changes",
       {
-        event: '*',
-        schema: 'public',
-        table: 'room_participants',
-        filter: `room_id=eq.${roomId}`
+        event: "*",
+        schema: "public",
+        table: "room_participants",
+        filter: `room_id=eq.${roomId}`,
       },
-      callbacks.onParticipantChange
+      callbacks.onParticipantChange,
     );
   }
 
   if (callbacks.onMessage) {
     channel.on(
-      'postgres_changes',
+      "postgres_changes",
       {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `room_id=eq.${roomId}`
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `room_id=eq.${roomId}`,
       },
-      callbacks.onMessage
+      callbacks.onMessage,
     );
   }
 
@@ -114,21 +118,20 @@ export const useRoom = (roomId: string) => {
       // Fetch room and participant data in parallel
       const [roomResponse, participantsResponse] = await Promise.all([
         supabase
-          .from('rooms')
-          .select(`
+          .from("rooms")
+          .select(
+            `
             *,
             messages (
               content,
               created_at,
               user_id
             )
-          `)
-          .eq('id', roomId)
+          `,
+          )
+          .eq("id", roomId)
           .single(),
-        supabase
-          .from('room_participants')
-          .select('*')
-          .eq('room_id', roomId)
+        supabase.from("room_participants").select("*").eq("room_id", roomId),
       ]);
 
       if (roomResponse.error) throw roomResponse.error;
@@ -138,11 +141,13 @@ export const useRoom = (roomId: string) => {
       setParticipants(participantsResponse.data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch room data'));
+      setError(
+        err instanceof Error ? err : new Error("Failed to fetch room data"),
+      );
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load room data"
+        description: "Failed to load room data",
       });
     } finally {
       setLoading(false);
@@ -155,16 +160,16 @@ export const useRoom = (roomId: string) => {
 
     const channel = createRoomChannel(supabase, roomId, {
       onUpdate: (payload) => {
-        setRoom(prev => ({
+        setRoom((prev) => ({
           ...prev,
-          ...payload.new
+          ...payload.new,
         }));
 
         // Handle room expiration
         if (!payload.new.is_active) {
           toast({
             title: "Room Expired",
-            description: "This room has been terminated or expired."
+            description: "This room has been terminated or expired.",
           });
         }
       },
@@ -172,32 +177,32 @@ export const useRoom = (roomId: string) => {
         setRoom(null);
         toast({
           title: "Room Deleted",
-          description: "This room has been deleted."
+          description: "This room has been deleted.",
         });
       },
       onParticipantChange: (payload) => {
-        setParticipants(prev => {
-          if (payload.eventType === 'DELETE') {
-            return prev.filter(p => p.user_id !== payload.old.user_id);
-          } else if (payload.eventType === 'INSERT') {
+        setParticipants((prev) => {
+          if (payload.eventType === "DELETE") {
+            return prev.filter((p) => p.user_id !== payload.old.user_id);
+          } else if (payload.eventType === "INSERT") {
             return [...prev, payload.new];
           } else {
-            return prev.map(p =>
-              p.user_id === payload.new.user_id ? payload.new : p
+            return prev.map((p) =>
+              p.user_id === payload.new.user_id ? payload.new : p,
             );
           }
         });
       },
       onMessage: (payload) => {
-        setRoom(prev => ({
+        setRoom((prev) => ({
           ...prev,
           last_message: {
             content: payload.new.content,
             created_at: payload.new.created_at,
-            user_id: payload.new.user_id
-          }
+            user_id: payload.new.user_id,
+          },
         }));
-      }
+      },
     });
 
     channelRef.current = channel;
@@ -231,35 +236,35 @@ export const useRoomPresence = (roomId: string, userId: string | null) => {
       updateQueue.current = updateQueue.current.then(async () => {
         try {
           const { error } = await supabase
-            .from('room_participants')
+            .from("room_participants")
             .update({ last_activity: new Date().toISOString() })
-            .eq('room_id', roomId)
-            .eq('user_id', userId);
+            .eq("room_id", roomId)
+            .eq("user_id", userId);
 
           if (error) throw error;
           lastActivityRef.current = now;
         } catch (error) {
-          console.error('Failed to update presence:', error);
+          console.error("Failed to update presence:", error);
         }
       });
     }, 1000),
-    [roomId, userId]
+    [roomId, userId],
   );
 
   useEffect(() => {
     if (!roomId || !userId) return;
 
-    const events = ['mousedown', 'keydown', 'touchstart', 'mousemove'];
+    const events = ["mousedown", "keydown", "touchstart", "mousemove"];
     const handleActivity = updatePresence;
 
-    events.forEach(event => {
+    events.forEach((event) => {
       window.addEventListener(event, handleActivity, { passive: true });
     });
 
     const interval = setInterval(updatePresence, 30000);
 
     return () => {
-      events.forEach(event => {
+      events.forEach((event) => {
         window.removeEventListener(event, handleActivity);
       });
       clearInterval(interval);
@@ -272,12 +277,12 @@ export const useRoomPresence = (roomId: string, userId: string | null) => {
     return () => {
       if (roomId && userId) {
         supabase
-          .from('room_participants')
+          .from("room_participants")
           .update({ last_activity: new Date().toISOString() })
-          .eq('room_id', roomId)
-          .eq('user_id', userId)
+          .eq("room_id", roomId)
+          .eq("user_id", userId)
           .then(() => {
-            console.log('Final presence update completed');
+            console.log("Final presence update completed");
           })
           .catch(console.error);
       }
@@ -287,39 +292,48 @@ export const useRoomPresence = (roomId: string, userId: string | null) => {
 
 // Enhanced filtered rooms hook with caching
 export const useFilteredRooms = (filters: RoomFilters) => {
-  const rooms = useRoomStore(state => Array.from(state.rooms.values()));
-  const joinedRooms = useRoomStore(state => state.joinedRooms);
+  const rooms = useRoomStore((state) => Array.from(state.rooms.values()));
+  const joinedRooms = useRoomStore((state) => state.joinedRooms);
   const {
-    searchQuery = '',
-    type = 'all',
+    searchQuery = "",
+    type = "all",
     showJoinedOnly = false,
-    sortBy = 'recent',
-    status = 'active'
+    sortBy = "recent",
+    status = "active",
   } = filters;
 
   return useMemo(() => {
-    let filteredRooms = rooms.filter(room => {
-      const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType = type === 'all' || room.type === type;
+    let filteredRooms = rooms.filter((room) => {
+      const matchesSearch = room.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesType = type === "all" || room.type === type;
       const matchesJoinedFilter = !showJoinedOnly || joinedRooms.has(room.id);
-      const matchesStatus = status === 'all' ||
-        (status === 'active' ? room.is_active : !room.is_active);
+      const matchesStatus =
+        status === "all" ||
+        (status === "active" ? room.is_active : !room.is_active);
 
-      return matchesSearch && matchesType && matchesJoinedFilter && matchesStatus;
+      return (
+        matchesSearch && matchesType && matchesJoinedFilter && matchesStatus
+      );
     });
 
     // Enhanced sorting with expiration consideration
     return filteredRooms.sort((a, b) => {
       switch (sortBy) {
-        case 'expiringSoon':
-          const aExpiry = a.expires_at ? new Date(a.expires_at).getTime() : Infinity;
-          const bExpiry = b.expires_at ? new Date(b.expires_at).getTime() : Infinity;
+        case "expiringSoon":
+          const aExpiry = a.expires_at
+            ? new Date(a.expires_at).getTime()
+            : Infinity;
+          const bExpiry = b.expires_at
+            ? new Date(b.expires_at).getTime()
+            : Infinity;
           return aExpiry - bExpiry;
-        case 'popular':
+        case "popular":
           return (b.participant_count || 0) - (a.participant_count || 0);
-        case 'alphabetical':
+        case "alphabetical":
           return a.name.localeCompare(b.name);
-        case 'recent':
+        case "recent":
         default:
           const aTime = a.last_message?.created_at
             ? new Date(a.last_message.created_at).getTime()
@@ -336,23 +350,23 @@ export const useFilteredRooms = (filters: RoomFilters) => {
 // Keyboard navigation hook with room switching
 export const useRoomKeyboardShortcuts = (
   roomId: string | null,
-  onRoomChange: (roomId: string) => void
+  onRoomChange: (roomId: string) => void,
 ) => {
-  const rooms = useRoomStore(state => Array.from(state.rooms.values()));
+  const rooms = useRoomStore((state) => Array.from(state.rooms.values()));
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (!e.altKey || !roomId) return;
 
-      const currentIndex = rooms.findIndex(room => room.id === roomId);
+      const currentIndex = rooms.findIndex((room) => room.id === roomId);
       if (currentIndex === -1) return;
 
       let nextIndex: number;
       switch (e.key) {
-        case 'ArrowUp':
+        case "ArrowUp":
           nextIndex = (currentIndex - 1 + rooms.length) % rooms.length;
           break;
-        case 'ArrowDown':
+        case "ArrowDown":
           nextIndex = (currentIndex + 1) % rooms.length;
           break;
         default:
@@ -366,7 +380,7 @@ export const useRoomKeyboardShortcuts = (
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
   }, [roomId, rooms, onRoomChange]);
 };

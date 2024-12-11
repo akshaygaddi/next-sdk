@@ -44,7 +44,8 @@ export default function WelcomeScreen() {
             Welcome to Chat Rooms
           </h1>
           <p className="text-xl text-muted-foreground max-w-lg mx-auto">
-            Connect with others in real-time through themed chat rooms and engaging discussions.
+            Connect with others in real-time through themed chat rooms and
+            engaging discussions.
           </p>
         </div>
 

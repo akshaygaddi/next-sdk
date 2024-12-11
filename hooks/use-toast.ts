@@ -4,12 +4,18 @@ import * as React from "react";
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 // Enhanced toast configuration
-const TOAST_LIMIT = 3;  // Allow multiple toasts
+const TOAST_LIMIT = 3; // Allow multiple toasts
 const DEFAULT_TOAST_DURATION = 5000; // 5 seconds default
 const TOAST_REMOVE_DELAY = 300; // Faster removal for better UX
 
-type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
-type ToastPosition = 'top' | 'top-right' | 'top-left' | 'bottom' | 'bottom-right' | 'bottom-left';
+type ToastVariant = "default" | "success" | "error" | "warning" | "info";
+type ToastPosition =
+  | "top"
+  | "top-right"
+  | "top-left"
+  | "bottom"
+  | "bottom-right"
+  | "bottom-left";
 
 interface ToasterToast extends ToastProps {
   id: string;
@@ -39,24 +45,24 @@ type ActionType = typeof actionTypes;
 
 type Action =
   | {
-  type: ActionType["ADD_TOAST"];
-  toast: ToasterToast;
-}
+      type: ActionType["ADD_TOAST"];
+      toast: ToasterToast;
+    }
   | {
-  type: ActionType["UPDATE_TOAST"];
-  toast: Partial<ToasterToast>;
-}
+      type: ActionType["UPDATE_TOAST"];
+      toast: Partial<ToasterToast>;
+    }
   | {
-  type: ActionType["DISMISS_TOAST"];
-  toastId?: ToasterToast["id"];
-}
+      type: ActionType["DISMISS_TOAST"];
+      toastId?: ToasterToast["id"];
+    }
   | {
-  type: ActionType["REMOVE_TOAST"];
-  toastId?: ToasterToast["id"];
-}
+      type: ActionType["REMOVE_TOAST"];
+      toastId?: ToasterToast["id"];
+    }
   | {
-  type: ActionType["CLEAR_ALL_TOASTS"];
-};
+      type: ActionType["CLEAR_ALL_TOASTS"];
+    };
 
 interface State {
   toasts: ToasterToast[];
@@ -64,7 +70,10 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
-const addToRemoveQueue = (toastId: string, duration: number = DEFAULT_TOAST_DURATION) => {
+const addToRemoveQueue = (
+  toastId: string,
+  duration: number = DEFAULT_TOAST_DURATION,
+) => {
   if (toastTimeouts.has(toastId)) {
     clearTimeout(toastTimeouts.get(toastId)!);
   }
@@ -94,7 +103,7 @@ export const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         toasts: state.toasts.map((t) =>
-          t.id === action.toast.id ? { ...t, ...action.toast } : t
+          t.id === action.toast.id ? { ...t, ...action.toast } : t,
         ),
       };
 
@@ -114,10 +123,10 @@ export const reducer = (state: State, action: Action): State => {
         toasts: state.toasts.map((t) =>
           t.id === toastId || toastId === undefined
             ? {
-              ...t,
-              open: false,
-            }
-            : t
+                ...t,
+                open: false,
+              }
+            : t,
         ),
       };
     }
@@ -162,7 +171,11 @@ interface ToastOptions extends Partial<ToasterToast> {
 }
 
 interface ToastFunction {
-  (props: ToastOptions): { id: string; dismiss: () => void; update: (props: Partial<ToasterToast>) => void };
+  (props: ToastOptions): {
+    id: string;
+    dismiss: () => void;
+    update: (props: Partial<ToasterToast>) => void;
+  };
   success: (props: ToastOptions) => void;
   error: (props: ToastOptions) => void;
   warning: (props: ToastOptions) => void;
@@ -205,10 +218,12 @@ const createToast = ({ ...props }: ToastOptions) => {
 };
 
 const toast = Object.assign(createToast, {
-  success: (props: ToastOptions) => createToast({ ...props, variant: 'success' }),
-  error: (props: ToastOptions) => createToast({ ...props, variant: 'error' }),
-  warning: (props: ToastOptions) => createToast({ ...props, variant: 'warning' }),
-  info: (props: ToastOptions) => createToast({ ...props, variant: 'info' }),
+  success: (props: ToastOptions) =>
+    createToast({ ...props, variant: "success" }),
+  error: (props: ToastOptions) => createToast({ ...props, variant: "error" }),
+  warning: (props: ToastOptions) =>
+    createToast({ ...props, variant: "warning" }),
+  info: (props: ToastOptions) => createToast({ ...props, variant: "info" }),
   dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   clearAll: () => dispatch({ type: "CLEAR_ALL_TOASTS" }),
 }) as ToastFunction;

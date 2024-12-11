@@ -1,6 +1,14 @@
-'use client'
-import React, { useTransition, useState, useEffect } from 'react';
-import { Mail, Lock, ArrowRight, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
+"use client";
+import React, { useTransition, useState, useEffect } from "react";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  User,
+  Eye,
+  EyeOff,
+  AlertCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,16 +31,16 @@ const SignupPage = () => {
         const result = await signup(formData);
         if (result?.error) {
           setError(
-            result.error === 'Email already registered'
-              ? 'This email is already registered. Please try signing in instead.'
-              : result.error
+            result.error === "Email already registered"
+              ? "This email is already registered. Please try signing in instead."
+              : result.error,
           );
           setShake(true);
         }
       } catch (e) {
         // Only set error if it's not a redirect
-        if (!e.toString().includes('NEXT_REDIRECT')) {
-          setError('An unexpected error occurred. Please try again.');
+        if (!e.toString().includes("NEXT_REDIRECT")) {
+          setError("An unexpected error occurred. Please try again.");
           setShake(true);
         }
       }
@@ -49,9 +57,9 @@ const SignupPage = () => {
 
   // Handle Enter key
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
-      const form = e.target.closest('form');
+      const form = e.target.closest("form");
       if (form) form.requestSubmit();
     }
   };
@@ -70,10 +78,10 @@ const SignupPage = () => {
                 top: `${Math.random() * 100}%`,
                 width: `${Math.random() * 3 + 1}rem`,
                 height: `${Math.random() * 3 + 1}rem`,
-                backgroundColor: '#f97316',
-                borderRadius: '50%',
-                filter: 'blur(50px)',
-                animation: `pulse ${Math.random() * 3 + 2}s infinite`
+                backgroundColor: "#f97316",
+                borderRadius: "50%",
+                filter: "blur(50px)",
+                animation: `pulse ${Math.random() * 3 + 2}s infinite`,
               }}
             />
           ))}
@@ -84,7 +92,7 @@ const SignupPage = () => {
       <div className="w-full max-w-md">
         <div
           className={`relative backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 rounded-2xl shadow-xl overflow-hidden border border-gray-200/20 dark:border-gray-700/20 transition-transform ${
-            shake ? 'animate-shake' : ''
+            shake ? "animate-shake" : ""
           }`}
         >
           {/* Form Header */}
@@ -100,7 +108,10 @@ const SignupPage = () => {
           {/* Error Alert */}
           {error && (
             <div className="px-8 mb-4">
-              <Alert variant="destructive" className="bg-destructive/10 border-none">
+              <Alert
+                variant="destructive"
+                className="bg-destructive/10 border-none"
+              >
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
@@ -111,7 +122,10 @@ const SignupPage = () => {
           <form className="px-8 pb-8 space-y-6" action={handleSubmit}>
             {/* Username Field */}
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="username"
+                className="text-gray-700 dark:text-gray-300"
+              >
                 Username
               </Label>
               <div className="relative">
@@ -138,7 +152,10 @@ const SignupPage = () => {
 
             {/* Email Field */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="email"
+                className="text-gray-700 dark:text-gray-300"
+              >
                 Email
               </Label>
               <div className="relative">
@@ -165,7 +182,10 @@ const SignupPage = () => {
 
             {/* Password Field */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="password"
+                className="text-gray-700 dark:text-gray-300"
+              >
                 Password
               </Label>
               <div className="relative">
@@ -230,7 +250,7 @@ const SignupPage = () => {
             {/* Sign In Link */}
             <div className="text-center">
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <Link
                   href="/auth/login"
                   className="text-orange-500 hover:text-orange-600 font-medium transition-colors"

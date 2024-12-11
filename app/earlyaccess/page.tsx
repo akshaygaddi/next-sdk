@@ -1,20 +1,27 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  Sparkles, Bug, MessageSquare, Zap,
-  Users, Star, Gift, ThumbsUp, CheckCircle
-} from 'lucide-react';
+  Sparkles,
+  Bug,
+  MessageSquare,
+  Zap,
+  Users,
+  Star,
+  Gift,
+  ThumbsUp,
+  CheckCircle,
+} from "lucide-react";
 
 const BetaFeedbackPage = () => {
   const [formData, setFormData] = useState({
-    email: '',
-    name: '',
-    usability: '',
-    features: '',
-    improvements: '',
-    rating: '3',
-    bugReport: ''
+    email: "",
+    name: "",
+    usability: "",
+    features: "",
+    improvements: "",
+    rating: "3",
+    bugReport: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -24,33 +31,33 @@ const BetaFeedbackPage = () => {
   };
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
   const feedbackCategories = [
     {
       icon: MessageSquare,
-      title: 'User Experience',
-      description: 'Share your thoughts on platform usability and design'
+      title: "User Experience",
+      description: "Share your thoughts on platform usability and design",
     },
     {
       icon: Bug,
-      title: 'Bug Reports',
-      description: 'Help us identify and fix technical issues'
+      title: "Bug Reports",
+      description: "Help us identify and fix technical issues",
     },
     {
       icon: Star,
-      title: 'Feature Feedback',
-      description: 'Rate and review our current feature set'
+      title: "Feature Feedback",
+      description: "Rate and review our current feature set",
     },
     {
       icon: Zap,
-      title: 'Suggestions',
-      description: 'Propose improvements and new features'
-    }
+      title: "Suggestions",
+      description: "Propose improvements and new features",
+    },
   ];
 
   return (
@@ -68,7 +75,7 @@ const BetaFeedbackPage = () => {
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
               animationDuration: `${Math.random() * 10 + 10}s`,
-              animationDelay: `${Math.random() * -20}s`
+              animationDelay: `${Math.random() * -20}s`,
             }}
           />
         ))}
@@ -93,8 +100,9 @@ const BetaFeedbackPage = () => {
           </h1>
 
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-            Your feedback is crucial in shaping our platform. Share your thoughts, report bugs,
-            and suggest improvements to help us create the best possible experience.
+            Your feedback is crucial in shaping our platform. Share your
+            thoughts, report bugs, and suggest improvements to help us create
+            the best possible experience.
           </p>
         </div>
 
@@ -103,10 +111,14 @@ const BetaFeedbackPage = () => {
           <div className="order-2 lg:order-1">
             {!isSubmitted ? (
               <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                <h2 className="text-2xl font-semibold mb-6">Share Your Feedback</h2>
+                <h2 className="text-2xl font-semibold mb-6">
+                  Share Your Feedback
+                </h2>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Name</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Name
+                    </label>
                     <input
                       type="text"
                       name="name"
@@ -118,7 +130,9 @@ const BetaFeedbackPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Email</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Email
+                    </label>
                     <input
                       type="email"
                       name="email"
@@ -130,7 +144,9 @@ const BetaFeedbackPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">How would you rate the overall usability?</label>
+                    <label className="block text-sm font-medium mb-2">
+                      How would you rate the overall usability?
+                    </label>
                     <textarea
                       name="usability"
                       value={formData.usability}
@@ -142,7 +158,9 @@ const BetaFeedbackPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Rate your experience</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Rate your experience
+                    </label>
                     <select
                       name="rating"
                       value={formData.rating}
@@ -158,7 +176,9 @@ const BetaFeedbackPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Which features do you find most useful?</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Which features do you find most useful?
+                    </label>
                     <textarea
                       name="features"
                       value={formData.features}
@@ -170,7 +190,9 @@ const BetaFeedbackPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Suggested improvements</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Suggested improvements
+                    </label>
                     <textarea
                       name="improvements"
                       value={formData.improvements}
@@ -182,7 +204,9 @@ const BetaFeedbackPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Report any bugs or issues</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Report any bugs or issues
+                    </label>
                     <textarea
                       name="bugReport"
                       value={formData.bugReport}
@@ -205,8 +229,9 @@ const BetaFeedbackPage = () => {
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                 <h3 className="text-2xl font-semibold mb-2">Thank You!</h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Your feedback has been received and will help us improve the platform.
-                  We appreciate your contribution to making our service better.
+                  Your feedback has been received and will help us improve the
+                  platform. We appreciate your contribution to making our
+                  service better.
                 </p>
               </div>
             )}
@@ -216,18 +241,22 @@ const BetaFeedbackPage = () => {
           <div className="order-1 lg:order-2">
             {/* Why Your Feedback Matters */}
             <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-8">
-              <h2 className="text-2xl font-semibold mb-6">Why Your Feedback Matters</h2>
+              <h2 className="text-2xl font-semibold mb-6">
+                Why Your Feedback Matters
+              </h2>
               <ul className="space-y-4">
                 {[
                   "Helps us identify and fix issues quickly",
                   "Shapes the development of new features",
                   "Improves the user experience for everyone",
                   "Ensures we're meeting your needs",
-                  "Guides our product roadmap"
+                  "Guides our product roadmap",
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-start gap-3">
                     <ThumbsUp className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
-                    <span className="text-gray-600 dark:text-gray-300">{item}</span>
+                    <span className="text-gray-600 dark:text-gray-300">
+                      {item}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -243,8 +272,12 @@ const BetaFeedbackPage = () => {
                     className="p-6 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20 hover:scale-105 transition-transform"
                   >
                     <Icon className="w-8 h-8 text-orange-500 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">{category.title}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{category.description}</p>
+                    <h3 className="text-lg font-semibold mb-2">
+                      {category.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {category.description}
+                    </p>
                   </div>
                 );
               })}

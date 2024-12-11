@@ -17,12 +17,12 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import RoomPrivacySelection from "@/components/RoomPrivacySelection";
 
-
 const FORM_STEPS = [
   {
     id: "name",
     title: "Room Name",
-    description: "Choose a memorable name for your chat room (max 12 characters)",
+    description:
+      "Choose a memorable name for your chat room (max 12 characters)",
   },
   {
     id: "type",
@@ -75,7 +75,10 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
         }
         break;
       case 2:
-        if (formData.expiresIn && (isNaN(formData.expiresIn) || formData.expiresIn < 0)) {
+        if (
+          formData.expiresIn &&
+          (isNaN(formData.expiresIn) || formData.expiresIn < 0)
+        ) {
           newErrors.expiresIn = "Please enter a valid duration";
         } else if (formData.expiresIn > 100) {
           newErrors.expiresIn = "Duration cannot exceed 100 minutes";
@@ -109,11 +112,15 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
 
     setIsSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
       const expiresAt = formData.expiresIn
-        ? new Date(Date.now() + parseInt(formData.expiresIn) * 60 * 1000).toISOString()
+        ? new Date(
+            Date.now() + parseInt(formData.expiresIn) * 60 * 1000,
+          ).toISOString()
         : null;
 
       const { data: room, error } = await supabase
@@ -174,7 +181,7 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
                   setFormData({ ...formData, name: value });
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     handleNext(e);
                   }
                 }}
@@ -219,7 +226,7 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
                     setFormData({ ...formData, password: e.target.value })
                   }
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       handleNext(e);
                     }
                   }}
@@ -248,8 +255,14 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
                   <Button
                     key={preset.value}
                     type="button"
-                    variant={formData.expiresIn === preset.value ? "default" : "outline"}
-                    onClick={() => setFormData({ ...formData, expiresIn: preset.value })}
+                    variant={
+                      formData.expiresIn === preset.value
+                        ? "default"
+                        : "outline"
+                    }
+                    onClick={() =>
+                      setFormData({ ...formData, expiresIn: preset.value })
+                    }
                     className="flex-1"
                   >
                     {preset.label}
@@ -267,11 +280,14 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
                   type="number"
                   value={formData.expiresIn}
                   onChange={(e) => {
-                    const value = Math.min(100, Math.max(0, parseInt(e.target.value) || ""));
+                    const value = Math.min(
+                      100,
+                      Math.max(0, parseInt(e.target.value) || ""),
+                    );
                     setFormData({ ...formData, expiresIn: value.toString() });
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       e.preventDefault();
                       handleSubmit(e);
                     }
@@ -296,9 +312,7 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
       <Progress value={progress} className="h-1" />
 
       <div className="space-y-2 mb-6">
-        <h3 className="text-lg font-semibold">
-          {FORM_STEPS[step].title}
-        </h3>
+        <h3 className="text-lg font-semibold">{FORM_STEPS[step].title}</h3>
         <p className="text-sm text-muted-foreground">
           {FORM_STEPS[step].description}
         </p>
@@ -319,10 +333,7 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
           </Button>
 
           {step < FORM_STEPS.length - 1 ? (
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" disabled={isSubmitting}>
               Next
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>

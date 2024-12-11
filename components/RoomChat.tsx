@@ -32,7 +32,7 @@ import {
   MessageSquare,
   ImageIcon,
   Mic,
-  ArrowDown
+  ArrowDown,
 } from "lucide-react";
 import { formatDistanceToNow, formatDistance } from "date-fns";
 import { toast } from "@/hooks/use-toast";
@@ -44,13 +44,9 @@ import {
 } from "@/components/ui/tooltip";
 import MessageInput from "@/components/MessageInput";
 import { Card } from "@/components/ui/card";
-import  Message  from "@/components/messageDisplay";
+import Message from "@/components/messageDisplay";
 import ScrollManager from "@/components/ScrollManager";
 import { TerminateRoomDialog } from "@/components/TerminateRoomDialog ";
-
-
-
-
 
 // Participant Card Component
 const ParticipantCard = React.memo(({ participant, isCreator }) => (
@@ -66,9 +62,7 @@ const ParticipantCard = React.memo(({ participant, isCreator }) => (
     </Avatar>
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2">
-        <p className="font-medium truncate text-sm">
-          {participant.user_id}
-        </p>
+        <p className="font-medium truncate text-sm">{participant.user_id}</p>
         {isCreator && (
           <Badge variant="secondary" className="h-5">
             <Crown className="h-3 w-3 mr-1" />
@@ -85,19 +79,18 @@ const ParticipantCard = React.memo(({ participant, isCreator }) => (
   </div>
 ));
 
-
 const RoomHeader = ({
-                      room,
-                      participants,
-                      timeRemaining,
-                      showSidebar,
-                      showParticipants,
-                      currentUser,
-                      onToggleSidebar,
-                      setShowParticipants,
-                      handleLeaveRoom,
-                      handleTerminateRoom
-                    }) => {
+  room,
+  participants,
+  timeRemaining,
+  showSidebar,
+  showParticipants,
+  currentUser,
+  onToggleSidebar,
+  setShowParticipants,
+  handleLeaveRoom,
+  handleTerminateRoom,
+}) => {
   const HeaderIcon = ({ icon: Icon, onClick, tooltip, color }) => (
     <TooltipProvider>
       <Tooltip>
@@ -126,14 +119,14 @@ const RoomHeader = ({
           <HeaderIcon
             icon={showSidebar ? PanelLeftClose : PanelLeftOpen}
             onClick={onToggleSidebar}
-            tooltip={showSidebar ? 'Hide rooms sidebar' : 'Show rooms sidebar'}
-            color={showSidebar ? '#F9802E' : undefined}
+            tooltip={showSidebar ? "Hide rooms sidebar" : "Show rooms sidebar"}
+            color={showSidebar ? "#F9802E" : undefined}
           />
 
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1 truncate">
               <h1 className="text-base font-semibold truncate">{room.name}</h1>
-              {room.type === 'private' ? (
+              {room.type === "private" ? (
                 <Lock className="h-3 w-3 text-destructive/70 shrink-0" />
               ) : (
                 <Globe className="h-3 w-3 text-primary/60 shrink-0" />
@@ -159,8 +152,10 @@ const RoomHeader = ({
           <HeaderIcon
             icon={showParticipants ? EyeOff : Eye}
             onClick={() => setShowParticipants(!showParticipants)}
-            tooltip={showParticipants ? 'Hide participants' : 'Show participants'}
-            color={showParticipants ? '#F9802E' : undefined}
+            tooltip={
+              showParticipants ? "Hide participants" : "Show participants"
+            }
+            color={showParticipants ? "#F9802E" : undefined}
           />
 
           <HeaderIcon
@@ -180,10 +175,8 @@ const RoomHeader = ({
   );
 };
 
-
-
 // Main RoomChat Component
-export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
+export default function RoomChat({ room, showSidebar, onToggleSidebar }) {
   const [participants, setParticipants] = useState([]);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -196,13 +189,12 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
   const supabase = createClient();
   const router = useRouter();
 
-
   // scorll
   const scrollContainerRef = useRef(null);
 
   // Load participants visibility from localStorage
   useEffect(() => {
-    const savedParticipantsState = localStorage.getItem('showParticipants');
+    const savedParticipantsState = localStorage.getItem("showParticipants");
     if (savedParticipantsState !== null) {
       setShowParticipants(JSON.parse(savedParticipantsState));
     }
@@ -210,9 +202,8 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
 
   // Save participants visibility to localStorage
   useEffect(() => {
-    localStorage.setItem('showParticipants', JSON.stringify(showParticipants));
+    localStorage.setItem("showParticipants", JSON.stringify(showParticipants));
   }, [showParticipants]);
-
 
   // Update timer for room expiration
   useEffect(() => {
@@ -242,15 +233,12 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
       try {
         const [userData, participantsData, messagesData] = await Promise.all([
           supabase.auth.getUser(),
-          supabase
-            .from("room_participants")
-            .select("*")
-            .eq("room_id", room.id),
+          supabase.from("room_participants").select("*").eq("room_id", room.id),
           supabase
             .from("messages")
             .select("*")
             .eq("room_id", room.id)
-            .order("created_at", { ascending: true })
+            .order("created_at", { ascending: true }),
         ]);
 
         if (!mounted) return;
@@ -299,13 +287,13 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
             });
           } else if (payload.eventType === "DELETE") {
             setParticipants((prev) =>
-              prev.filter((p) => p.user_id !== payload.old.user_id)
+              prev.filter((p) => p.user_id !== payload.old.user_id),
             );
             toast({
               description: `${payload.old.user_id} left the room`,
             });
           }
-        }
+        },
       )
       .subscribe();
 
@@ -322,7 +310,7 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
         },
         (payload) => {
           setMessages((prev) => [...prev, payload.new]);
-        }
+        },
       )
       .subscribe();
 
@@ -386,10 +374,7 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
 
     try {
       // Delete the room
-      const { error } = await supabase
-        .from("rooms")
-        .delete()
-        .eq("id", room.id);
+      const { error } = await supabase.from("rooms").delete().eq("id", room.id);
 
       if (error) throw error;
 
@@ -424,13 +409,22 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
     );
   }
 
-
-
   return (
     <div className="flex h-full bg-background">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        <RoomHeader room={room} participants={participants} timeRemaining={timeRemaining} showSidebar={showSidebar} showParticipants={showParticipants} currentUser={currentUser} onToggleSidebar={onToggleSidebar} setShowParticipants={setShowParticipants} handleLeaveRoom={handleLeaveRoom} handleTerminateRoom={handleTerminateRoom}/>
+        <RoomHeader
+          room={room}
+          participants={participants}
+          timeRemaining={timeRemaining}
+          showSidebar={showSidebar}
+          showParticipants={showParticipants}
+          currentUser={currentUser}
+          onToggleSidebar={onToggleSidebar}
+          setShowParticipants={setShowParticipants}
+          handleLeaveRoom={handleLeaveRoom}
+          handleTerminateRoom={handleTerminateRoom}
+        />
 
         {/* Messages Area */}
         <div
@@ -448,7 +442,9 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
         </div>
 
         {/* ScrollManager positioned above MessageInput */}
-        <div className="flex items-center justify-center px-2 py-1 text-xs font-bold text-white"> {/* Positioned above MessageInput */}
+        <div className="flex items-center justify-center px-2 py-1 text-xs font-bold text-white">
+          {" "}
+          {/* Positioned above MessageInput */}
           <ScrollManager
             messages={messages}
             scrollContainerRef={scrollContainerRef}
@@ -456,10 +452,7 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
         </div>
 
         {/* Message Input */}
-        <MessageInput
-          onSendMessage={handleSendMessage}
-          defaultWidth="800px"
-        />
+        <MessageInput onSendMessage={handleSendMessage} defaultWidth="800px" />
       </div>
 
       {/* Participants Sidebar */}

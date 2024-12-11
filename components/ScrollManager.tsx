@@ -1,5 +1,5 @@
 // ScrollManager.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
 
@@ -11,7 +11,9 @@ const ScrollIndicator = ({ onClick, unreadCount }) => (
       size="sm"
     >
       <ArrowDown className="h-4 w-4 mr-2 animate-bounce" />
-      <span>{unreadCount} new message{unreadCount > 1 ? "s" : ""}</span>
+      <span>
+        {unreadCount} new message{unreadCount > 1 ? "s" : ""}
+      </span>
     </Button>
   </div>
 );
@@ -26,33 +28,40 @@ const ScrollManager = ({ messages, scrollContainerRef }) => {
   // Check if we're near bottom of the scroll container
   const checkIfNearBottom = useCallback((container) => {
     const threshold = 150; // Increased threshold for better detection
-    const position = container.scrollHeight - container.scrollTop - container.clientHeight;
+    const position =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
     return position < threshold;
   }, []);
 
   // Scroll to bottom with a guaranteed complete scroll
-  const performScrollToBottom = useCallback((container) => {
-    const maxScrollAttempts = 3;
-    let scrollAttempt = 0;
+  const performScrollToBottom = useCallback(
+    (container) => {
+      const maxScrollAttempts = 3;
+      let scrollAttempt = 0;
 
-    const scrollWithCheck = () => {
-      const targetScrollTop = container.scrollHeight;
-      container.scrollTo({
-        top: targetScrollTop,
-        behavior: scrollAttempt === 0 ? 'smooth' : 'auto'
-      });
+      const scrollWithCheck = () => {
+        const targetScrollTop = container.scrollHeight;
+        container.scrollTo({
+          top: targetScrollTop,
+          behavior: scrollAttempt === 0 ? "smooth" : "auto",
+        });
 
-      // Verify scroll position after a small delay
-      setTimeout(() => {
-        if (!checkIfNearBottom(container) && scrollAttempt < maxScrollAttempts) {
-          scrollAttempt++;
-          scrollWithCheck();
-        }
-      }, 100);
-    };
+        // Verify scroll position after a small delay
+        setTimeout(() => {
+          if (
+            !checkIfNearBottom(container) &&
+            scrollAttempt < maxScrollAttempts
+          ) {
+            scrollAttempt++;
+            scrollWithCheck();
+          }
+        }, 100);
+      };
 
-    scrollWithCheck();
-  }, [checkIfNearBottom]);
+      scrollWithCheck();
+    },
+    [checkIfNearBottom],
+  );
 
   // Handle scroll events
   useEffect(() => {
@@ -72,8 +81,8 @@ const ScrollManager = ({ messages, scrollContainerRef }) => {
       }
     };
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
   }, [scrollContainerRef, checkIfNearBottom]);
 
   // Handle new messages
@@ -89,12 +98,19 @@ const ScrollManager = ({ messages, scrollContainerRef }) => {
         }, 50);
       } else {
         setShowIndicator(true);
-        setUnreadCount(prev => prev + (messages.length - lastMessageCount));
+        setUnreadCount((prev) => prev + (messages.length - lastMessageCount));
       }
 
       setLastMessageCount(messages.length);
     }
-  }, [messages, scrollContainerRef, userHasScrolled, lastMessageCount, isNearBottom, performScrollToBottom]);
+  }, [
+    messages,
+    scrollContainerRef,
+    userHasScrolled,
+    lastMessageCount,
+    isNearBottom,
+    performScrollToBottom,
+  ]);
 
   // Scroll to bottom handler for manual clicks
   const scrollToBottom = useCallback(() => {

@@ -1,47 +1,47 @@
-import React from 'react';
-import { Mail, Twitter, Github, Linkedin, MessageSquare } from 'lucide-react';
-import Link from 'next/link';
+import React from "react";
+import { Mail, Twitter, Github, Linkedin, MessageSquare } from "lucide-react";
+import Link from "next/link";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const footerSections = {
     product: {
-      title: 'Product',
+      title: "Product",
       links: [
-        { name: 'Features', href: '/features' },
-        { name: 'Smart Rooms', href: '/rooms' },
-        { name: 'Communities', href: '/communities' },
-        { name: 'Roadmap', href: '/roadmap' },
-        { name: 'Changelog', href: '/changelog' }
-      ]
+        { name: "Features", href: "/features" },
+        { name: "Smart Rooms", href: "/rooms" },
+        { name: "Communities", href: "/communities" },
+        { name: "Roadmap", href: "/roadmap" },
+        { name: "Changelog", href: "/changelog" },
+      ],
     },
     company: {
-      title: 'Company',
+      title: "Company",
       links: [
-        { name: 'About Us', href: '/about' },
-        { name: 'Blog', href: '/blog' },
-        { name: 'Careers', href: '/careers' },
-        { name: 'Contact', href: '/contact' }
-      ]
+        { name: "About Us", href: "/about" },
+        { name: "Blog", href: "/blog" },
+        { name: "Careers", href: "/careers" },
+        { name: "Contact", href: "/contact" },
+      ],
     },
     resources: {
-      title: 'Resources',
+      title: "Resources",
       links: [
-        { name: 'Documentation', href: '/docs' },
-        { name: 'Help Center', href: '/help' },
-        { name: 'Community Guidelines', href: '/guidelines' },
-        { name: 'API', href: '/api' }
-      ]
+        { name: "Documentation", href: "/docs" },
+        { name: "Help Center", href: "/help" },
+        { name: "Community Guidelines", href: "/guidelines" },
+        { name: "API", href: "/api" },
+      ],
     },
     legal: {
-      title: 'Legal',
+      title: "Legal",
       links: [
-        { name: 'Privacy Policy', href: '/privacy' },
-        { name: 'Terms of Service', href: '/terms' },
-        { name: 'Cookie Policy', href: '/cookies' }
-      ]
-    }
+        { name: "Privacy Policy", href: "/privacy" },
+        { name: "Terms of Service", href: "/terms" },
+        { name: "Cookie Policy", href: "/cookies" },
+      ],
+    },
   };
 
   return (
@@ -60,10 +60,13 @@ const Footer = () => {
                   <MessageSquare className="w-6 h-6 text-orange-500" />
                 </div>
               </div>
-              <span className="text-xl font-bold text-gray-800 dark:text-gray-200">Your Brand</span>
+              <span className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                Your Brand
+              </span>
             </div>
             <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm">
-              Redefining digital conversations through innovative features and meaningful community engagement.
+              Redefining digital conversations through innovative features and
+              meaningful community engagement.
             </p>
             {/* Newsletter signup */}
             <div className="relative group max-w-md">
@@ -84,7 +87,9 @@ const Footer = () => {
           {/* Links columns */}
           {Object.entries(footerSections).map(([key, section]) => (
             <div key={key}>
-              <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">{section.title}</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                {section.title}
+              </h3>
               <ul className="space-y-3">
                 {section.links.map((link, index) => (
                   <li key={index}>

@@ -1,94 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { Star, Network } from "lucide-react";
 import {
-  Swords,
-  Shield,
-  Brain,
-  MessageSquare,
-  Lightbulb,
-  ChevronRight,
-  ArrowRight,
-  Check,
-  X,
-  Video,
-  Users,
-  Lock,
-  Star,
-  Trophy,
-  BookOpen,
-  Code,
-  ThumbsUp,
-  ThumbsDown,
-  Timer,
-  Search,
-  Activity,
-  Database,
-  Network,
-} from "lucide-react";
-import {
-  ContentDiscoverySection,
-  MicroLearningHub,
-  LearningReels,
-} from "@/app/home/sections";
-import {
-  BattleArenaFeature,
   EnhancedCTA,
-  FactCheckFeature,
-  SmartRoomsDemo,
   SmartRoomsShowcase,
   StartupLanding,
-  TrustSystemFeature,
 } from "@/app/home/activeSections";
-
-// const FeatureSection = ({
-//                           badge,
-//                           icon: Icon,
-//                           title,
-//                           description,
-//                           metrics,
-//                           children
-//                         }) => (
-//   <section className="py-24 relative overflow-hidden">
-//     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-//       {/* Feature Badge */}
-//       <div className="flex justify-center mb-8">
-//         <div className="bg-orange-100 dark:bg-orange-900/20 text-orange-500 px-4 py-2 rounded-full flex items-center gap-2">
-//           <Icon className="w-5 h-5" />
-//           {badge}
-//         </div>
-//       </div>
-//
-//       {/* Gradient Headline */}
-//       <div className="text-center mb-8">
-//         <h2 className="text-4xl md:text-5xl font-bold mb-4">
-//           <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-//             {title}
-//           </span>
-//         </h2>
-//         <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-//           {description}
-//         </p>
-//       </div>
-//
-//       {/* Interactive Demo */}
-//       <div className="backdrop-blur-md bg-white/30 dark:bg-gray-800/30 rounded-2xl p-8 border border-white/20 mb-12">
-//         {children}
-//       </div>
-//
-//       {/* Supporting Metrics */}
-//       <div className="grid grid-cols-3 gap-6">
-//         {metrics.map((metric, idx) => (
-//           <div key={idx} className="text-center p-6 bg-white/50 dark:bg-gray-700/50 rounded-xl">
-//             <div className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-2">
-//               {metric.value}
-//             </div>
-//             <div className="text-sm text-gray-500">{metric.label}</div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   </section>
-// );
 
 // Feature Section Template Component
 const FeatureSection = ({
@@ -274,22 +191,18 @@ const EnhancedLanding = () => {
   }, []);
 
   return (
-    <div
-      className=" min-h-screen bg-gradient-to-br from-gray-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
+    <div className=" min-h-screen bg-gradient-to-br from-gray-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
       {/* Hero Section */}
       <StartupLanding />
 
       {/* Smart Rooms */}
-      <div className='border-y-2 border-orange-500'>
-
-      <SmartRoomsShowcase />
+      <div className="border-y-2 border-orange-500">
+        <SmartRoomsShowcase />
       </div>
 
       {/* CTA Section */}
 
-
       <EnhancedCTA />
-
     </div>
   );
 };

@@ -1,7 +1,16 @@
-import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Card } from '@/components/ui/card';
-import { VoteStats } from '@/app/actions/polls';
+import React from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { Card } from "@/components/ui/card";
+import { VoteStats } from "@/app/actions/polls";
 
 interface PollVisualizationProps {
   data: VoteStats[];
@@ -9,7 +18,11 @@ interface PollVisualizationProps {
   className?: string;
 }
 
-const PollVisualization = ({ data, options, className = '' }: PollVisualizationProps) => {
+const PollVisualization = ({
+  data,
+  options,
+  className = "",
+}: PollVisualizationProps) => {
   const chartData = data.map((stat, index) => ({
     name: options[index],
     votes: stat.votes,
@@ -38,8 +51,19 @@ const PollVisualization = ({ data, options, className = '' }: PollVisualizationP
               angle={-45}
               textAnchor="end"
             />
-            <YAxis yAxisId="left" label={{ value: 'Votes', angle: -90, position: 'insideLeft' }} />
-            <YAxis yAxisId="right" orientation="right" label={{ value: 'Percentage', angle: 90, position: 'insideRight' }} />
+            <YAxis
+              yAxisId="left"
+              label={{ value: "Votes", angle: -90, position: "insideLeft" }}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              label={{
+                value: "Percentage",
+                angle: 90,
+                position: "insideRight",
+              }}
+            />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
@@ -63,8 +87,18 @@ const PollVisualization = ({ data, options, className = '' }: PollVisualizationP
             />
             <Legend />
             <Bar yAxisId="left" dataKey="votes" fill="#f97316" name="Votes" />
-            <Bar yAxisId="right" dataKey="percentage" fill="#84cc16" name="% of Total Votes" />
-            <Bar yAxisId="right" dataKey="participationRate" fill="#06b6d4" name="% of Participants" />
+            <Bar
+              yAxisId="right"
+              dataKey="percentage"
+              fill="#84cc16"
+              name="% of Total Votes"
+            />
+            <Bar
+              yAxisId="right"
+              dataKey="participationRate"
+              fill="#06b6d4"
+              name="% of Participants"
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

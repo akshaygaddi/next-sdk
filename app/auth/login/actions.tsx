@@ -17,7 +17,7 @@ export async function login(formData: FormData) {
     // Return error message instead of redirecting
     return {
       error: error.message,
-      success: false
+      success: false,
     };
   }
 

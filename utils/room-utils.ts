@@ -1,12 +1,12 @@
 // utils/room-utils.ts
-import { z } from 'zod';
-import { throttle, debounce } from 'lodash';
+import { z } from "zod";
+import { throttle, debounce } from "lodash";
 
 // Room validation schema
 export const roomSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(3).max(50),
-  type: z.enum(['public', 'private']),
+  type: z.enum(["public", "private"]),
   room_code: z.string().length(6),
   password: z.string().nullable(),
   created_by: z.string(),
@@ -17,18 +17,18 @@ export const roomSchema = z.object({
 
 // Permission checks
 export const ROOM_ACTIONS = {
-  JOIN: 'join',
-  LEAVE: 'leave',
-  TERMINATE: 'terminate',
-  VIEW: 'view',
+  JOIN: "join",
+  LEAVE: "leave",
+  TERMINATE: "terminate",
+  VIEW: "view",
 } as const;
 
-export type RoomAction = typeof ROOM_ACTIONS[keyof typeof ROOM_ACTIONS];
+export type RoomAction = (typeof ROOM_ACTIONS)[keyof typeof ROOM_ACTIONS];
 
 export const checkRoomPermission = (
   action: RoomAction,
   room: any,
-  userId: string | null
+  userId: string | null,
 ): boolean => {
   if (!userId) return false;
 
@@ -41,7 +41,7 @@ export const checkRoomPermission = (
       return room.created_by === userId;
     case ROOM_ACTIONS.VIEW:
       return (
-        room.type === 'public' ||
+        room.type === "public" ||
         room.created_by === userId ||
         room.participants?.includes(userId)
       );
@@ -52,7 +52,7 @@ export const checkRoomPermission = (
 
 // Input sanitization
 export const sanitizeSearchQuery = (query: string): string => {
-  return query.replace(/[^\w\s-]/gi, '').trim();
+  return query.replace(/[^\w\s-]/gi, "").trim();
 };
 
 // Throttled search
@@ -70,7 +70,7 @@ export const validateRoom = (room: unknown) => {
   try {
     return roomSchema.parse(room);
   } catch (error) {
-    console.error('Invalid room data:', error);
+    console.error("Invalid room data:", error);
     return null;
   }
 };
@@ -80,10 +80,10 @@ export class RoomError extends Error {
   constructor(
     message: string,
     public code: string,
-    public recoverable: boolean = true
+    public recoverable: boolean = true,
   ) {
     super(message);
-    this.name = 'RoomError';
+    this.name = "RoomError";
   }
 }
 

@@ -1,26 +1,36 @@
-'use client'
+"use client";
 
 import React, { useState, useEffect, startTransition } from "react";
-import { Home, Users, DoorOpen, User2, Settings, Bell, LogOut, Menu, Sun, Moon, Target } from "lucide-react";
-import { useTheme } from 'next-themes';
+import {
+  Home,
+  Users,
+  DoorOpen,
+  User2,
+  Settings,
+  Bell,
+  LogOut,
+  Menu,
+  Sun,
+  Moon,
+  Target,
+} from "lucide-react";
+import { useTheme } from "next-themes";
 import { redirect, usePathname, useRouter } from "next/navigation";
-import Link from 'next/link';
+import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { logout } from "@/app/auth/signout/action";
 
-
 const MENU_ITEMS = [
-  { id: 'home', name: 'Home', icon: Home, path: '/home' },
-  { id: 'community', name: 'Community', icon: Users, path: '/community' },
-  { id: 'rooms', name: 'Rooms', icon: DoorOpen, path: '/rooms' },
-  { id: 'about', name: 'About Us', icon: Target, path: '/about' }
+  { id: "home", name: "Home", icon: Home, path: "/home" },
+  { id: "community", name: "Community", icon: Users, path: "/community" },
+  { id: "rooms", name: "Rooms", icon: DoorOpen, path: "/rooms" },
+  { id: "about", name: "About Us", icon: Target, path: "/about" },
 ];
 
 const PROFILE_MENU_ITEMS = [
-
   // TODO add the menu items later
   // { id: 'profile', name: 'Profile', icon: User2, path: '/profile' },
   // { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' }
@@ -73,16 +83,26 @@ const NavItem = ({ item, onClick, onHover }: NavItemProps) => {
         onMouseLeave={() => onHover(null)}
         className={`relative group flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-300 ${
           isActive
-            ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400'
-            : 'hover:bg-orange-50 dark:hover:bg-orange-900/20'
+            ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400"
+            : "hover:bg-orange-50 dark:hover:bg-orange-900/20"
         }`}
       >
-        <item.icon className={`w-5 h-5 transition-all duration-300 ${
-          isActive ? 'text-orange-600 dark:text-orange-400 scale-110' : 'group-hover:scale-110'
-        }`} />
-        <span className={`font-medium ${
-          isActive ? 'bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400 bg-clip-text text-transparent' : ''
-        }`}>{item.name}</span>
+        <item.icon
+          className={`w-5 h-5 transition-all duration-300 ${
+            isActive
+              ? "text-orange-600 dark:text-orange-400 scale-110"
+              : "group-hover:scale-110"
+          }`}
+        />
+        <span
+          className={`font-medium ${
+            isActive
+              ? "bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400 bg-clip-text text-transparent"
+              : ""
+          }`}
+        >
+          {item.name}
+        </span>
         {isActive && (
           <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full"></div>
         )}
@@ -98,10 +118,6 @@ const NotificationBell = () => (
   </button>
 );
 
-
-
-
-
 // Add ThemeToggle component
 const ThemeToggle = () => {
   const { theme, setTheme } = useTheme();
@@ -115,10 +131,10 @@ const ThemeToggle = () => {
 
   return (
     <button
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       className="p-2 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-300 group"
     >
-      {theme === 'dark' ? (
+      {theme === "dark" ? (
         <Sun className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
       ) : (
         <Moon className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
@@ -127,7 +143,12 @@ const ThemeToggle = () => {
   );
 };
 
-const ProfileMenu = ({ isOpen, onToggle, user, handleSignOut }: ProfileMenuProps) => {
+const ProfileMenu = ({
+  isOpen,
+  onToggle,
+  user,
+  handleSignOut,
+}: ProfileMenuProps) => {
   const [isClosing, setIsClosing] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
@@ -155,61 +176,60 @@ const ProfileMenu = ({ isOpen, onToggle, user, handleSignOut }: ProfileMenuProps
     }
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isOpen && !(event.target as Element).closest(".profile-menu")) {
+        handleClose();
+      }
+    };
 
-useEffect(() => {
-  const handleClickOutside = (event: MouseEvent) => {
-    if (isOpen && !(event.target as Element).closest('.profile-menu')) {
-      handleClose();
-    }
-  };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
-  document.addEventListener('mousedown', handleClickOutside);
-  return () => document.removeEventListener('mousedown', handleClickOutside);
-}, [isOpen]);
+  if (!isOpen) return null;
 
-if (!isOpen) return null;
-
-return (
-  <div
-    className={`profile-menu absolute right-0 mt-3 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-orange-100 dark:border-orange-900/30 overflow-hidden transform transition-all duration-200 ${
-      isClosing ? "opacity-0 scale-95" : "opacity-100 scale-100"
-    }`}>
+  return (
     <div
-      className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-b border-orange-100 dark:border-orange-900/30">
-      <p className="text-sm text-gray-600 dark:text-gray-400">Signed in as</p>
-      <p className="text-sm font-medium">{user?.user?.email}</p>
-    </div>
-    <div className="p-2">
-      {PROFILE_MENU_ITEMS.map((item) => (
+      className={`profile-menu absolute right-0 mt-3 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-orange-100 dark:border-orange-900/30 overflow-hidden transform transition-all duration-200 ${
+        isClosing ? "opacity-0 scale-95" : "opacity-100 scale-100"
+      }`}
+    >
+      <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-b border-orange-100 dark:border-orange-900/30">
+        <p className="text-sm text-gray-600 dark:text-gray-400">Signed in as</p>
+        <p className="text-sm font-medium">{user?.user?.email}</p>
+      </div>
+      <div className="p-2">
+        {PROFILE_MENU_ITEMS.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => handleMenuItemClick(item)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200 group"
+          >
+            <item.icon className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+            <span className="font-medium">{item.name}</span>
+          </button>
+        ))}
         <button
-          key={item.id}
-          onClick={() => handleMenuItemClick(item)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200 group"
+          onClick={() => handleMenuItemClick({ id: "logout" })}
+          disabled={isLoggingOut}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <item.icon className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-          <span className="font-medium">{item.name}</span>
+          {isLoggingOut ? (
+            <>
+              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+              <span className="font-medium">Signing out...</span>
+            </>
+          ) : (
+            <>
+              <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+              <span className="font-medium">Logout</span>
+            </>
+          )}
         </button>
-      ))}
-      <button
-        onClick={() => handleMenuItemClick({ id: "logout" })}
-        disabled={isLoggingOut}
-        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isLoggingOut ? (
-          <>
-            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-            <span className="font-medium">Signing out...</span>
-          </>
-        ) : (
-          <>
-            <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-            <span className="font-medium">Logout</span>
-          </>
-        )}
-      </button>
+      </div>
     </div>
-  </div>
-);
+  );
 };
 
 interface ElasticNavbarProps {
@@ -236,7 +256,7 @@ const ElasticNavbar = ({ user }) => {
         toast({
           title: "Successfully logged out",
           description: "Please Visit Again!",
-          variant: "default"
+          variant: "default",
         });
         router.push("/home");
       } else {
@@ -246,13 +266,12 @@ const ElasticNavbar = ({ user }) => {
       toast({
         title: "Error signing out",
         description: "Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoggingOut(false);
     }
   };
-
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -271,14 +290,16 @@ const ElasticNavbar = ({ user }) => {
 
   if (!user.user) {
     return (
-      <nav className={`fixed w-full top-0 z-50 px-4 py-3 transition-transform duration-300 ${
-        isVisible ? "translate-y-0" : "-translate-y-full"
-      }`}>
+      <nav
+        className={`fixed w-full top-0 z-50 px-4 py-3 transition-transform duration-300 ${
+          isVisible ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-2xl shadow-lg">
             <div className="relative px-6 py-3">
               <div className="flex items-center justify-between">
-              <Logo />
+                <Logo />
                 <div className="flex items-center gap-6">
                   {/* Theme Toggle */}
                   <ThemeToggle />
@@ -289,37 +310,34 @@ const ElasticNavbar = ({ user }) => {
                     <Link href="/auth/login">
                       <button className="relative group px-6 py-2 overflow-hidden rounded-xl">
                         {/* Animated gradient background */}
-                        <div
-                          className="absolute inset-0 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 group-hover:bg-gradient-to-r group-hover:from-orange-600 group-hover:via-amber-600 group-hover:to-orange-600 transition-all duration-300"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 group-hover:bg-gradient-to-r group-hover:from-orange-600 group-hover:via-amber-600 group-hover:to-orange-600 transition-all duration-300"></div>
 
                         {/* Shimmering effect overlay */}
-                        <div
-                          className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_250%] animate-shimmer"></div>
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_250%] animate-shimmer"></div>
 
                         {/* Button content */}
                         <div className="relative flex items-center gap-2">
-                          <span className="text-white font-medium">Sign In</span>
+                          <span className="text-white font-medium">
+                            Sign In
+                          </span>
                         </div>
 
                         {/* Subtle border glow */}
-                        <div
-                          className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-orange-500/50 to-amber-500/50 blur opacity-0 group-hover:opacity-75 transition-opacity duration-300"></div>
+                        <div className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-orange-500/50 to-amber-500/50 blur opacity-0 group-hover:opacity-75 transition-opacity duration-300"></div>
                       </button>
                     </Link>
 
                     {/* Sign Up - Secondary Button */}
                     <Link href="/auth/signup">
-                      <button
-                        className="relative group px-6 py-2 overflow-hidden rounded-xl border border-orange-500/20 dark:border-orange-400/20 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:border-orange-500/50 dark:hover:border-orange-400/50 transition-all duration-300">
+                      <button className="relative group px-6 py-2 overflow-hidden rounded-xl border border-orange-500/20 dark:border-orange-400/20 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:border-orange-500/50 dark:hover:border-orange-400/50 transition-all duration-300">
                         {/* Hover overlay */}
-                        <div
-                          className="absolute inset-0 bg-gradient-to-r from-orange-500/0 to-amber-500/0 group-hover:from-orange-500/5 group-hover:to-amber-500/5 transition-all duration-300"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 to-amber-500/0 group-hover:from-orange-500/5 group-hover:to-amber-500/5 transition-all duration-300"></div>
 
                         {/* Button content */}
                         <div className="relative flex items-center gap-2">
-              <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent font-medium">
-                Sign Up
-              </span>
+                          <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent font-medium">
+                            Sign Up
+                          </span>
                         </div>
                       </button>
                     </Link>
@@ -334,13 +352,14 @@ const ElasticNavbar = ({ user }) => {
   }
 
   return (
-    <nav className={`fixed w-full top-0 z-50 px-4 py-3 transition-transform duration-300 ${
-      isVisible ? "translate-y-0" : "-translate-y-full"
-    }`}>
+    <nav
+      className={`fixed w-full top-0 z-50 px-4 py-3 transition-transform duration-300 ${
+        isVisible ? "translate-y-0" : "-translate-y-full"
+      }`}
+    >
       <div className="max-w-7xl mx-auto">
         <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-2xl shadow-lg">
-          <div
-            className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-yellow-500/10 rounded-2xl animate-gradient-x"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-yellow-500/10 rounded-2xl animate-gradient-x"></div>
 
           <div className="relative px-6 py-3">
             <div className="flex items-center justify-between">
@@ -360,7 +379,7 @@ const ElasticNavbar = ({ user }) => {
 
               <div className="flex items-center gap-4">
                 <ThemeToggle />
-                <NotificationBell />
+                {/*<NotificationBell />*/}
 
                 <div className="relative">
                   <button
@@ -368,14 +387,11 @@ const ElasticNavbar = ({ user }) => {
                     className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-300"
                   >
                     <div className="relative group">
-                      <div
-                        className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl blur opacity-75 group-hover:opacity-100 transition-all duration-300"></div>
-                      <div
-                        className="relative w-9 h-9 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl p-0.5 transform group-hover:scale-105 transition-transform duration-300">
-                        <div
-                          className="w-full h-full rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl blur opacity-75 group-hover:opacity-100 transition-all duration-300"></div>
+                      <div className="relative w-9 h-9 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl p-0.5 transform group-hover:scale-105 transition-transform duration-300">
+                        <div className="w-full h-full rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center">
                           <span className="text-sm font-medium text-orange-600">
-                           {user?.user?.email?.[0]?.toUpperCase()}
+                            {user?.user?.email?.[0]?.toUpperCase()}
                           </span>
                         </div>
                       </div>
@@ -387,7 +403,6 @@ const ElasticNavbar = ({ user }) => {
                     user={user}
                     handleSignOut={handleSignOut}
                   />
-
                 </div>
 
                 <button
@@ -400,9 +415,11 @@ const ElasticNavbar = ({ user }) => {
             </div>
 
             {/* Mobile Menu */}
-            <div className={`md:hidden overflow-hidden transition-all duration-300 ${
-              isMobileMenuOpen ? 'max-h-96 mt-4' : 'max-h-0'
-            }`}>
+            <div
+              className={`md:hidden overflow-hidden transition-all duration-300 ${
+                isMobileMenuOpen ? "max-h-96 mt-4" : "max-h-0"
+              }`}
+            >
               <div className="space-y-2 pb-4">
                 {MENU_ITEMS.map((item) => (
                   <button
@@ -414,8 +431,8 @@ const ElasticNavbar = ({ user }) => {
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl ${
                       activeNav === item.id
-                        ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'
-                        : 'hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                        ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600"
+                        : "hover:bg-orange-50 dark:hover:bg-orange-900/20"
                     } transition-all duration-200`}
                   >
                     <item.icon className="w-5 h-5" />
@@ -430,6 +447,5 @@ const ElasticNavbar = ({ user }) => {
     </nav>
   );
 };
-
 
 export default ElasticNavbar;

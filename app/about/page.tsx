@@ -13,10 +13,11 @@ import {
   Share2,
   BookOpen,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const AboutPage = () => {
   const [waitlistCount, setWaitlistCount] = useState(482); // Example starting count
-
+  const router = useRouter();
   const features = [
     {
       icon: <Shield className="w-8 h-8 text-orange-500" />,
@@ -190,7 +191,7 @@ const AboutPage = () => {
       {/* Features Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+          <h2 className="pb-2 text-3xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
             Current & Upcoming Features
           </h2>
 
@@ -262,7 +263,10 @@ const AboutPage = () => {
               online communities.
             </p>
             <div className="flex flex-col items-center space-y-4">
-              <button className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300">
+              <button
+                onClick={() => router.push("/waitlist")}
+                className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300"
+              >
                 Request Early Access
               </button>
               <p className="text-sm text-gray-600 dark:text-gray-400">
