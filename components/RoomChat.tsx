@@ -158,16 +158,23 @@ const RoomHeader = ({
             color={showParticipants ? "#F9802E" : undefined}
           />
 
-          <HeaderIcon
-            icon={ArrowLeftFromLine}
-            onClick={handleLeaveRoom}
-            tooltip="Leave room"
-          />
+
 
           {currentUser?.id === room.created_by ? (
-            <TerminateRoomDialog onTerminate={handleTerminateRoom} />
+            <>
+              <HeaderIcon
+                icon={ArrowLeftFromLine}
+                onClick={handleLeaveRoom}
+                tooltip="Leave room"
+              />
+              <TerminateRoomDialog onTerminate={handleTerminateRoom} />
+            </>
           ) : (
-            <Button onClick={handleLeaveRoom}>Leave Room</Button>
+            <HeaderIcon
+              icon={ArrowLeftFromLine}
+              onClick={handleLeaveRoom}
+              tooltip="Leave room"
+            />
           )}
         </div>
       </div>
