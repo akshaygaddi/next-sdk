@@ -73,7 +73,7 @@ const NotFoundPage = () => {
   }, []);
 
   return (
-    <div className="-mt-24 pt-24 min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full space-y-8 text-center">
         {/* Main Error */}
         <div className="space-y-4">

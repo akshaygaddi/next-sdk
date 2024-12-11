@@ -30,7 +30,7 @@ import {
   PanelLeftOpen,
   Image as ImageIcon,
   Mic,
-  Square,
+  Square, Upload
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
@@ -171,6 +171,19 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  // Add these type definitions
+  const fileInputRefAudio = useRef<HTMLInputElement>(null);
+
+
+// Update the handleFileChange function with proper typing
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setAudioBlob(null);
+    }
+  };
 
   // voice
 
@@ -308,6 +321,39 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
+  const uploadVoiceFile = async (file: File): Promise<any> => {
+    const supabaseClient = createClient();
+
+    const fileName = `${Math.random()}.${file.name.split('.').pop()}`;
+    const filePath = `${fileName}`;
+
+    try {
+      setIsUploading(true);
+      const { data, error } = await supabaseClient.storage
+        .from("rooms")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (error) throw error;
+
+      const {
+        data: { publicUrl },
+      } = supabaseClient.storage.from("rooms").getPublicUrl(data.path);
+
+      return {
+        url: publicUrl,
+        key: data.path,
+        id: data.id,
+        duration: 0, // You might want to get actual duration from the audio file
+      };
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedImage(e.target.files[0]);
@@ -337,14 +383,22 @@ const MessageInput: React.FC<MessageInputProps> = ({
           break;
 
         case "voice":
-          if (!audioBlob) return;
-          const voiceData = await uploadVoiceMessage(audioBlob);
+          if (!audioBlob && !selectedFile) return;
+
+          let voiceData;
+          if (audioBlob) {
+            voiceData = await uploadVoiceMessage(audioBlob);
+          } else if (selectedFile) {
+            voiceData = await uploadVoiceMessage(selectedFile);
+          }
+
           messageToSend = {
             type: "voice",
             content: message, // Optional caption
             metadata: voiceData,
           };
           setAudioBlob(null);
+          setSelectedFile(null);
           break;
 
         case "poll":
@@ -444,79 +498,132 @@ const MessageInput: React.FC<MessageInputProps> = ({
       case "voice":
         return (
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              {!isRecording && !audioBlob && (
-                <Button
-                  type="button"
-                  onClick={startRecording}
-                  className="rounded-xl bg-red-500 text-white hover:bg-red-600"
-                >
-                  <Mic className="h-4 w-4 mr-2" />
-                  Start Recording
-                </Button>
-              )}
-
-              {isRecording && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    onClick={stopRecording}
-                    className="rounded-xl bg-red-500 text-white hover:bg-red-600"
-                  >
-                    <Square className="h-4 w-4 mr-2" />
-                    Stop Recording
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <div className="animate-pulse">
-                      <div className="h-2 w-2 rounded-full bg-red-500" />
-                    </div>
-                    <span className="text-sm font-medium">
-                      {Math.floor(recordingTime / 60)}:
-                      {String(recordingTime % 60).padStart(2, "0")}
-                    </span>
+            <div className="flex flex-col gap-3">
+              {/* Recording and File Upload Controls */}
+              <div className="flex items-center gap-2">
+                {!isRecording && !audioBlob && !selectedFile && (
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      onClick={startRecording}
+                      className="rounded-xl bg-red-500 text-white hover:bg-red-600"
+                    >
+                      <Mic className="h-4 w-4 mr-2" />
+                      Start Recording
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => fileInputRefAudio.current?.click()}
+                      className="rounded-xl bg-blue-500 text-white hover:bg-blue-600"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Audio
+                    </Button>
+                    <input
+                      type="file"
+                      ref={fileInputRefAudio}
+                      onChange={handleFileChange}
+                      className="hidden"
+                      accept="audio/*"
+                    />
                   </div>
+                )}
+
+                {/* Recording in Progress */}
+                {isRecording && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      onClick={stopRecording}
+                      className="rounded-xl bg-red-500 text-white hover:bg-red-600"
+                    >
+                      <Square className="h-4 w-4 mr-2" />
+                      Stop Recording
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <div className="animate-pulse">
+                        <div className="h-2 w-2 rounded-full bg-red-500" />
+                      </div>
+                      <span className="text-sm font-medium">
+                  {Math.floor(recordingTime / 60)}:
+                        {String(recordingTime % 60).padStart(2, "0")}
+                </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Audio Preview */}
+                {audioBlob && !isRecording && (
+                  <div className="flex items-center gap-2">
+                    <audio
+                      src={URL.createObjectURL(audioBlob)}
+                      controls
+                      className="h-10"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => setAudioBlob(null)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Selected File Preview */}
+                {selectedFile && (
+                  <div className="flex items-center gap-2 bg-gray-100 p-2 rounded-xl">
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium truncate max-w-xs">
+                {selectedFile.name}
+              </span>
+                    <Button
+                      type="button"
+                      onClick={() => setSelectedFile(null)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Progress */}
+              {isUploading && (
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className="bg-red-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
                 </div>
               )}
 
-              {audioBlob && !isRecording && (
-                <div className="flex items-center gap-2">
-                  <audio
-                    src={URL.createObjectURL(audioBlob)}
-                    controls
-                    className="h-10"
+              {/* Caption Input */}
+              {(audioBlob || selectedFile) && !isUploading && (
+                <div className="flex items-end gap-2">
+                  <Textarea
+                    ref={textareaRef}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Add a caption (optional)"
+                    className="resize-none rounded-xl"
+                    style={{ maxHeight: `${maxHeight}px` }}
                   />
                   <Button
-                    type="button"
-                    onClick={() => setAudioBlob(null)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
+                    type="submit"
+                    size="icon"
+                    className="h-10 w-10 rounded-xl bg-red-500 text-white hover:bg-red-600"
+                    disabled={isUploading}
                   >
-                    <X className="h-4 w-4" />
+                    <Send className="h-4 w-4" />
                   </Button>
                 </div>
               )}
             </div>
-
-            {audioBlob && (
-              <div className="flex items-end gap-2">
-                <Textarea
-                  ref={textareaRef}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Add a caption (optional)"
-                  className="resize-none rounded-xl"
-                  style={{ maxHeight: `${maxHeight}px` }}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="h-10 w-10 rounded-xl bg-red-500 text-white hover:bg-red-600"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
           </div>
         );
 

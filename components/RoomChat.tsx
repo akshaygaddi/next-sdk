@@ -62,7 +62,7 @@ const ParticipantCard = React.memo(({ participant, isCreator }) => (
     </Avatar>
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2">
-        <p className="font-medium truncate text-sm">{participant.user_id}</p>
+        <p className="font-medium truncate text-sm">{participant.user_name || participant.user_id}</p>
         {isCreator && (
           <Badge variant="secondary" className="h-5">
             <Crown className="h-3 w-3 mr-1" />
@@ -290,7 +290,11 @@ export default function RoomChat({ room, showSidebar, onToggleSidebar }) {
               prev.filter((p) => p.user_id !== payload.old.user_id),
             );
             toast({
-              description: `${payload.old.user_id} left the room`,
+              description: `Someone left the room`,
+
+              // description: `${payload.old.user_id} left the room`,
+              //   TODO : add usrname here
+
             });
           }
         },

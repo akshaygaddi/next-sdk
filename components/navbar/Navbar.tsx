@@ -50,12 +50,12 @@ const Logo = () => (
       <div className="relative w-10 h-10">
         <div className="absolute inset-0 bg-white dark:bg-gray-900 rounded-xl transform rotate-3 group-hover:rotate-6 transition-transform duration-300"></div>
         <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl transform -rotate-3 group-hover:rotate-0 transition-transform duration-300 flex items-center justify-center">
-          <span className="text-white font-bold text-xl">S</span>
+          <span className="text-white font-bold text-xl">D</span>
         </div>
       </div>
     </div>
     <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-      SkillBridge
+      Domora
     </span>
   </div>
 );
