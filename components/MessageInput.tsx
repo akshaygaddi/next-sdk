@@ -47,7 +47,7 @@ interface MessageInputProps {
 const MESSAGE_TYPES = [
   { id: 'text', icon: MessageSquare, label: 'Text', color: 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20' },
   { id: 'code', icon: Code, label: 'Code', color: 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20' },
-  { id: 'poll', icon: BarChart3, label: 'Poll', color: 'bg-green-500/10 text-green-500 hover:bg-green-500/20' },
+  // { id: 'poll', icon: BarChart3, label: 'Poll', color: 'bg-green-500/10 text-green-500 hover:bg-green-500/20' },
   { id: 'link', icon: Link, label: 'Link', color: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20' },
   { id: 'quote', icon: Quote, label: 'Quote', color: 'bg-pink-500/10 text-pink-500 hover:bg-pink-500/20' },
   { id: 'image', icon: ImageIcon, label: 'Image', color: 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20' },

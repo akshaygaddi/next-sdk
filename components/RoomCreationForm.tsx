@@ -15,12 +15,14 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
+import RoomPrivacySelection from "@/components/RoomPrivacySelection";
+
 
 const FORM_STEPS = [
   {
     id: "name",
     title: "Room Name",
-    description: "Choose a memorable name for your chat room",
+    description: "Choose a memorable name for your chat room (max 12 characters)",
   },
   {
     id: "type",
@@ -32,6 +34,14 @@ const FORM_STEPS = [
     title: "Room Duration",
     description: "Set how long the room should remain active",
   },
+];
+
+const DURATION_PRESETS = [
+  { label: "15 min", value: "15" },
+  { label: "30 min", value: "30" },
+  { label: "45 min", value: "45" },
+  { label: "60 min", value: "60" },
+  { label: "90 min", value: "90" },
 ];
 
 export default function RoomCreationForm({ onRoomCreated, onClose }) {
@@ -55,6 +65,8 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
           newErrors.name = "Room name is required";
         } else if (formData.name.length < 3) {
           newErrors.name = "Room name must be at least 3 characters";
+        } else if (formData.name.length > 12) {
+          newErrors.name = "Room name cannot exceed 12 characters";
         }
         break;
       case 1:
@@ -65,6 +77,8 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
       case 2:
         if (formData.expiresIn && (isNaN(formData.expiresIn) || formData.expiresIn < 0)) {
           newErrors.expiresIn = "Please enter a valid duration";
+        } else if (formData.expiresIn > 100) {
+          newErrors.expiresIn = "Duration cannot exceed 100 minutes";
         }
         break;
     }
@@ -86,13 +100,11 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // If not on the last step, just go to next step
     if (step < FORM_STEPS.length - 1) {
       handleNext(e);
       return;
     }
 
-    // On last step, validate before submitting
     if (!validateStep(step)) return;
 
     setIsSubmitting(true);
@@ -118,7 +130,6 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
 
       if (error) throw error;
 
-      // Auto-join creator to the room
       await supabase
         .from("room_participants")
         .insert({ room_id: room.id, user_id: user.id });
@@ -158,9 +169,10 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => {
+                  const value = e.target.value.slice(0, 12); // Limit to 12 characters
+                  setFormData({ ...formData, name: value });
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleNext(e);
@@ -169,10 +181,16 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
                 placeholder="Enter room name..."
                 error={errors.name}
                 autoFocus
+                maxLength={12}
               />
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name}</p>
-              )}
+              <div className="flex justify-between">
+                {errors.name && (
+                  <p className="text-sm text-destructive">{errors.name}</p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {formData.name.length}/12
+                </p>
+              </div>
             </div>
           </motion.div>
         );
@@ -185,38 +203,10 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
           >
-            <RadioGroup
+            <RoomPrivacySelection
               value={formData.type}
-              onValueChange={(value) =>
-                setFormData({ ...formData, type: value })
-              }
-              className="space-y-3"
-            >
-              <div className="flex items-center space-x-4 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors">
-                <RadioGroupItem value="public" id="public" />
-                <div>
-                  <Label htmlFor="public" className="text-base font-medium">
-                    <Globe className="h-4 w-4 inline mr-2" />
-                    Public Room
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Anyone can join this room
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors">
-                <RadioGroupItem value="private" id="private" />
-                <div>
-                  <Label htmlFor="private" className="text-base font-medium">
-                    <Lock className="h-4 w-4 inline mr-2" />
-                    Private Room
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Only users with password can join
-                  </p>
-                </div>
-              </div>
-            </RadioGroup>
+              onChange={(value) => setFormData({ ...formData, type: value })}
+            />
 
             {formData.type === "private" && (
               <div className="space-y-2">
@@ -252,33 +242,49 @@ export default function RoomCreationForm({ onRoomCreated, onClose }) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
           >
-            <div className="space-y-2">
-              <Label htmlFor="expiresIn">
-                <Clock className="h-4 w-4 inline mr-2" />
-                Duration (minutes)
-              </Label>
-              <Input
-                id="expiresIn"
-                type="number"
-                value={formData.expiresIn}
-                onChange={(e) =>
-                  setFormData({ ...formData, expiresIn: e.target.value })
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-                placeholder="Leave empty for no expiration"
-                error={errors.expiresIn}
-              />
-              {errors.expiresIn && (
-                <p className="text-sm text-destructive">{errors.expiresIn}</p>
-              )}
-              <p className="text-sm text-muted-foreground">
-                Optional: Set a time limit for your room
-              </p>
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {DURATION_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.value}
+                    type="button"
+                    variant={formData.expiresIn === preset.value ? "default" : "outline"}
+                    onClick={() => setFormData({ ...formData, expiresIn: preset.value })}
+                    className="flex-1"
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="expiresIn">
+                  <Clock className="h-4 w-4 inline mr-2" />
+                  Custom Duration (1-100 minutes)
+                </Label>
+                <Input
+                  id="expiresIn"
+                  type="number"
+                  value={formData.expiresIn}
+                  onChange={(e) => {
+                    const value = Math.min(100, Math.max(0, parseInt(e.target.value) || ""));
+                    setFormData({ ...formData, expiresIn: value.toString() });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
+                  placeholder="Enter custom duration..."
+                  error={errors.expiresIn}
+                  min="1"
+                  max="100"
+                />
+                {errors.expiresIn && (
+                  <p className="text-sm text-destructive">{errors.expiresIn}</p>
+                )}
+              </div>
             </div>
           </motion.div>
         );

@@ -140,7 +140,7 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
     try {
       const { error } = await supabase
         .from('rooms')
-        .update({ is_active: false })
+        .delete()
         .eq('id', room.id);
 
       if (error) throw error;
@@ -150,17 +150,16 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
       }
 
       toast({
-        description: "Room terminated successfully"
+        description: "Room deleted successfully"
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to terminate room",
+        description: "Failed to delete room",
         variant: "destructive"
       });
     }
   };
-
   // Filter rooms based on search and visibility
   const filteredRooms = rooms.filter(room => {
     const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase());

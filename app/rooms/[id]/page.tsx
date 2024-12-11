@@ -7,6 +7,10 @@ import RoomChat from '@/components/RoomChat';
 
 import { createClient } from '@/utils/supabase/client';
 import RoomSidebar from "@/components/bolt/room-sidebar";
+import { toast } from "@/hooks/use-toast";
+
+
+
 
 
 const RoomsPage = ()  => {
@@ -16,10 +20,34 @@ const RoomsPage = ()  => {
   const [isMobile, setIsMobile] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const supabase = createClient();
-  console.log("prams ", params.id);
 
+  // Add this new effect for room deletion subscription
+  useEffect(() => {
+    if (!params.id) return;
 
+    const roomSubscription = supabase
+      .channel(`room-${params.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'rooms',
+          filter: `id=eq.${params.id}`
+        },
+        () => {
+          router.push('/rooms');
+          toast({
+            description: "This room has been terminated",
+          });
+        }
+      )
+      .subscribe();
 
+    return () => {
+      supabase.removeChannel(roomSubscription);
+    };
+  }, [params.id, router]);
 // Save sidebar state to localStorage
   useEffect(() => {
     const savedSidebarState = localStorage.getItem('showSidebar');
@@ -46,6 +74,7 @@ const RoomsPage = ()  => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, [selectedRoom]);
+
 
   // Handle room loading and selection logic...
 

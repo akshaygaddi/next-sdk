@@ -46,6 +46,7 @@ import MessageInput from "@/components/MessageInput";
 import { Card } from "@/components/ui/card";
 import  Message  from "@/components/messageDisplay";
 import ScrollManager from "@/components/ScrollManager";
+import { TerminateRoomDialog } from "@/components/TerminateRoomDialog ";
 
 
 
@@ -168,13 +169,10 @@ const RoomHeader = ({
             tooltip="Leave room"
           />
 
-          {currentUser?.id === room.created_by && (
-            <HeaderIcon
-              icon={Trash2}
-              onClick={handleTerminateRoom}
-              tooltip="Terminate room"
-              color="#EF4444"
-            />
+          {currentUser?.id === room.created_by ? (
+            <TerminateRoomDialog onTerminate={handleTerminateRoom} />
+          ) : (
+            <Button onClick={handleLeaveRoom}>Leave Room</Button>
           )}
         </div>
       </div>
@@ -387,16 +385,19 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
     if (currentUser?.id !== room.created_by) return;
 
     try {
+      // Delete the room
       const { error } = await supabase
         .from("rooms")
-        .update({ is_active: false })
+        .delete()
         .eq("id", room.id);
 
       if (error) throw error;
 
       toast({
         description: "Room terminated successfully",
+        variant: "success",
       });
+
       router.push("/rooms");
     } catch (error) {
       toast({
@@ -406,7 +407,6 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
       });
     }
   };
-
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -430,7 +430,7 @@ export default function RoomChat({ room,showSidebar, onToggleSidebar }) {
     <div className="flex h-full bg-background">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        <RoomHeader room={room} participants={participants} timeRemaining={timeRemaining} showSidebar={showSidebar} showParticipants={showParticipants} currentUser={currentUser} onToggleSidebar={onToggleSidebar} setShowParticipants={setShowParticipants} handleLeaveRoom={handleLeaveRoom} handleTerminateRoom={undefined}/>
+        <RoomHeader room={room} participants={participants} timeRemaining={timeRemaining} showSidebar={showSidebar} showParticipants={showParticipants} currentUser={currentUser} onToggleSidebar={onToggleSidebar} setShowParticipants={setShowParticipants} handleLeaveRoom={handleLeaveRoom} handleTerminateRoom={handleTerminateRoom}/>
 
         {/* Messages Area */}
         <div
