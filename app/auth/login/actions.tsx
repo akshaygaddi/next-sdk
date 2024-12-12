@@ -2,7 +2,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
 
 export async function login(formData: FormData) {
   const supabase = await createClient();
@@ -24,15 +23,16 @@ export async function login(formData: FormData) {
 export async function signInWithGoogle() {
   try {
 
-    const supabase =await createClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        skipBrowserRedirect: false, // This ensures proper PKCE handling
+        redirectTo: `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/auth/callback`,
         queryParams: {
+          prompt: 'select_account', // Forces Google account selection
           access_type: 'offline',
-          prompt: 'consent',
         },
       },
     });
