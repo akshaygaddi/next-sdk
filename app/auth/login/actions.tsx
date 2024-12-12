@@ -22,12 +22,18 @@ export async function login(formData: FormData) {
 
 export async function signInWithGoogle() {
   try {
+    console.log('Starting Google Sign In process'); // Debug log
     const supabase = await createClient();
+
+    // Log the redirect URL that will be used
+    const redirectUrl = `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/auth/callback`;
+    console.log('Redirect URL:', redirectUrl); // Debug log
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        skipBrowserRedirect: false,
-        redirectTo: `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/auth/callback`,
+        skipBrowserRedirect: true, // Changed to true to handle redirect manually
+        redirectTo: redirectUrl,
         queryParams: {
           prompt: 'select_account',
           access_type: 'offline',
@@ -40,6 +46,7 @@ export async function signInWithGoogle() {
       return { error: error.message };
     }
 
+    console.log('OAuth response data:', data); // Debug log
     return { data };
   } catch (error) {
     console.error("Unexpected error during Google Sign In:", error);

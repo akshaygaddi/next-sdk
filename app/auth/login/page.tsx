@@ -38,8 +38,11 @@ const LoginPage = () => {
 
   const handleGoogleSignIn = async () => {
     setError(null);
+    console.log('Google Sign In clicked'); // Debug log
+
     try {
       const result = await signInWithGoogle();
+      console.log('Sign in result:', result); // Debug log
 
       if (result?.error) {
         console.error('Sign in error:', result.error);
@@ -48,12 +51,18 @@ const LoginPage = () => {
         return;
       }
 
-      // No need to manually handle URL redirect as skipBrowserRedirect is false
-      // Supabase will handle the redirect automatically
-    } catch (e: any) {
-      // Only set error if it's not a redirect
+      // Manually handle the redirect using the URL from the response
+      if (result?.data?.url) {
+        console.log('Redirecting to:', result.data.url); // Debug log
+        window.location.href = result.data.url;
+      } else {
+        console.error('No redirect URL received');
+        setError("Failed to initiate Google sign in");
+        setShake(true);
+      }
+    } catch (e) {
+      console.error('Sign in exception:', e);
       if (!e.toString().includes("NEXT_REDIRECT")) {
-        console.error('Sign in exception:', e);
         setError("An unexpected error occurred. Please try again.");
         setShake(true);
       }

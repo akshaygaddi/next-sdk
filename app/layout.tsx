@@ -102,15 +102,13 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
     <body className={`${ibm_plex_sans.className} bg-white dark:bg-gray-950`}>
     <Providers>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <div className="min-h-screen flex flex-col">
-          <Navbar user={user} />
-          <main className="flex-1 pt-24 bg-gradient-to-b from-white via-orange-50/30 to-amber-50/30 dark:from-gray-950 dark:via-orange-900/5 dark:to-amber-900/5">
-            {children}
-          </main>
-          <Toaster />
-        </div>
-      </ThemeProvider>
+      <div className="min-h-screen flex flex-col">
+        <Navbar user={user} />
+        <main className="flex-1 pt-24 bg-gradient-to-b from-white via-orange-50/30 to-amber-50/30 dark:from-gray-950 dark:via-orange-900/5 dark:to-amber-900/5">
+          {children}
+        </main>
+        <Toaster />
+      </div>
     </Providers>
     </body>
     </html>
