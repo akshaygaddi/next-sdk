@@ -22,16 +22,14 @@ export async function login(formData: FormData) {
 
 export async function signInWithGoogle() {
   try {
-
     const supabase = await createClient();
-
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        skipBrowserRedirect: false, // This ensures proper PKCE handling
+        skipBrowserRedirect: false,
         redirectTo: `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/auth/callback`,
         queryParams: {
-          prompt: 'select_account', // Forces Google account selection
+          prompt: 'select_account',
           access_type: 'offline',
         },
       },
