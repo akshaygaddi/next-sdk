@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { signup } from "./actions";
+import { signInWithGoogle, signup } from "./actions";
 import Link from "next/link";
 
 const SignupPage = () => {
@@ -48,6 +48,8 @@ const SignupPage = () => {
   };
 // Add Google sign in handler
   const handleGoogleSignIn = async () => {
+
+
     setError(null);
     try {
       const result = await signInWithGoogle();
