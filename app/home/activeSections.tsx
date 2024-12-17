@@ -194,6 +194,261 @@ export const StartupLanding = () => {
   );
 };
 
+
+
+export const SmartRoomsShowcase = () => {
+  const features = [
+    {
+      icon: Code,
+      title: "Code Collaboration",
+      description:
+        "Share code with automatic syntax highlighting and formatting. Perfect for technical discussions and code reviews.",
+      highlights: [
+        "Auto-language detection",
+        "Syntax highlighting",
+        "Code execution preview",
+        "Version comparison",
+      ],
+    },
+    {
+      icon: Mic,
+      title: "Voice Messages",
+      description:
+        "Express complex ideas quickly with voice notes. Great for detailed explanations and quick feedback.",
+      highlights: [
+        "Instant recording",
+        "Waveform visualization",
+        "Playback speed control",
+        "Transcript generation",
+      ],
+    },
+    {
+      icon: PieChart,
+      title: "Instant Polls",
+      description:
+        "Make quick decisions with real-time polling. Gather team feedback efficiently.",
+      highlights: [
+        "Multiple poll types",
+        "Real-time results",
+        "Anonymous voting",
+        "Result analytics",
+      ],
+    },
+    {
+      icon: FileText,
+      title: "Rich Content",
+      description:
+        "Share any type of content with rich previews. Keep all project resources in one place.",
+      highlights: [
+        "File previews",
+        "Media galleries",
+        "Document rendering",
+        "Link enrichment",
+      ],
+    },
+  ];
+
+  const useCases = [
+    {
+      title: "Technical Teams",
+      scenarios: [
+        "Code reviews and pair programming",
+        "Architecture discussions",
+        "Debug session recordings",
+        "API documentation sharing",
+      ],
+    },
+    {
+      title: "Product Teams",
+      scenarios: [
+        "Feature planning polls",
+        "Design feedback sessions",
+        "User research sharing",
+        "Sprint planning meetings",
+      ],
+    },
+    {
+      title: "Remote Teams",
+      scenarios: [
+        "Asynchronous updates",
+        "Knowledge sharing",
+        "Team discussions",
+        "Project coordination",
+      ],
+    },
+  ];
+
+  return (
+    <div className=" max-w-6xl mx-auto px-4 py-16">
+      {/* Header */}
+      <div className="text-center mb-16">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-medium mb-4">
+          <Zap className="w-4 h-4" />
+          Now Available
+        </div>
+        <h2 className="text-4xl font-bold mb-6">
+          Experience Next-Gen
+          <span className="block bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            Team Communication
+          </span>
+        </h2>
+        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          Smart Rooms combine the best of chat, code sharing, and collaboration
+          tools into one seamless experience.
+        </p>
+      </div>
+
+      {/* Core Features Grid */}
+      <div className="grid md:grid-cols-2 gap-8 mb-16">
+        {features.map((feature, idx) => (
+          <div
+            key={idx}
+            className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-8 hover:shadow-lg transition-all duration-300"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 p-2.5 text-white mb-6">
+              <feature.icon className="w-full h-full" />
+            </div>
+            <h3 className="text-xl font-semibold mb-4">{feature.title}</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              {feature.description}
+            </p>
+            <ul className="space-y-3">
+              {feature.highlights.map((highlight, hidx) => (
+                <li
+                  key={hidx}
+                  className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
+                >
+                  <CheckCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  {highlight}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {/* Key Benefits */}
+      <div className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-8 mb-16">
+        <h3 className="text-2xl font-semibold mb-8 text-center">
+          Why Teams Love Smart Rooms
+        </h3>
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              icon: Timer,
+              title: "Save Time",
+              description:
+                "Reduce meeting time by 40% with async voice messages and structured discussions",
+            },
+            {
+              icon: Users,
+              title: "Better Collaboration",
+              description:
+                "Keep everyone aligned with rich content sharing and instant feedback",
+            },
+            {
+              icon: Link,
+              title: "Stay Connected",
+              description:
+                "Bridge the gap between remote and office teams with seamless communication",
+            },
+          ].map((benefit, idx) => (
+            <div key={idx} className="text-center">
+              <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 p-2.5 text-orange-600 dark:text-orange-400 mx-auto mb-4">
+                <benefit.icon className="w-full h-full" />
+              </div>
+              <h4 className="font-semibold mb-2">{benefit.title}</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {benefit.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Use Cases */}
+      <div className="grid md:grid-cols-3 gap-8">
+        {useCases.map((useCase, idx) => (
+          <div
+            key={idx}
+            className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-6"
+          >
+            <h4 className="font-semibold mb-4">{useCase.title}</h4>
+            <ul className="space-y-3">
+              {useCase.scenarios.map((scenario, sidx) => (
+                <li
+                  key={sidx}
+                  className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
+                >
+                  <CheckCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  {scenario}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export const EnhancedCTA = () => {
+  const router = useRouter();
+  return (
+    <section className="relative py-20">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-to-b from-orange-50 to-amber-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_500px_at_50%_200px,rgba(249,115,22,0.1),transparent)]" />
+      </div>
+
+      {/* Content */}
+      <div className="relative max-w-6xl mx-auto px-4">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-medium mb-6">
+            <Star className="w-4 h-4" />
+            Join Early Adopters
+          </div>
+
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            Join the Future of
+            <span className="pb-2 block bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mt-2">
+              Community Engagement
+            </span>
+          </h2>
+
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
+            Be part of the revolution in online communities. Create meaningful
+            discussions, validate knowledge, and engage with passionate
+            individuals.
+          </p>
+        </div>
+
+        {/* Stats Grid */}
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button
+            onClick={() => router.push("/rooms")}
+            className="group px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300"
+          >
+            <span className="flex items-center gap-2">
+              Get Started Now
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Decorative Elements */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
+    </section>
+  );
+};
+
+
+//
+//unused
+
 export const BattleArenaFeature = () => {
   const [activeTeam, setActiveTeam] = useState("left");
 
@@ -304,7 +559,7 @@ export const BattleArenaFeature = () => {
         <div className="space-y-4">
           {vsComparisons[0][
             activeTeam === "left" ? "leftTeam" : "rightTeam"
-          ].map((item, idx) => (
+            ].map((item, idx) => (
             <div
               key={idx}
               className="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:shadow-lg transition-all duration-300"
@@ -673,254 +928,5 @@ export const FactCheckFeature = () => {
         </div>
       </div>
     </div>
-  );
-};
-
-export const SmartRoomsShowcase = () => {
-  const features = [
-    {
-      icon: Code,
-      title: "Code Collaboration",
-      description:
-        "Share code with automatic syntax highlighting and formatting. Perfect for technical discussions and code reviews.",
-      highlights: [
-        "Auto-language detection",
-        "Syntax highlighting",
-        "Code execution preview",
-        "Version comparison",
-      ],
-    },
-    {
-      icon: Mic,
-      title: "Voice Messages",
-      description:
-        "Express complex ideas quickly with voice notes. Great for detailed explanations and quick feedback.",
-      highlights: [
-        "Instant recording",
-        "Waveform visualization",
-        "Playback speed control",
-        "Transcript generation",
-      ],
-    },
-    {
-      icon: PieChart,
-      title: "Instant Polls",
-      description:
-        "Make quick decisions with real-time polling. Gather team feedback efficiently.",
-      highlights: [
-        "Multiple poll types",
-        "Real-time results",
-        "Anonymous voting",
-        "Result analytics",
-      ],
-    },
-    {
-      icon: FileText,
-      title: "Rich Content",
-      description:
-        "Share any type of content with rich previews. Keep all project resources in one place.",
-      highlights: [
-        "File previews",
-        "Media galleries",
-        "Document rendering",
-        "Link enrichment",
-      ],
-    },
-  ];
-
-  const useCases = [
-    {
-      title: "Technical Teams",
-      scenarios: [
-        "Code reviews and pair programming",
-        "Architecture discussions",
-        "Debug session recordings",
-        "API documentation sharing",
-      ],
-    },
-    {
-      title: "Product Teams",
-      scenarios: [
-        "Feature planning polls",
-        "Design feedback sessions",
-        "User research sharing",
-        "Sprint planning meetings",
-      ],
-    },
-    {
-      title: "Remote Teams",
-      scenarios: [
-        "Asynchronous updates",
-        "Knowledge sharing",
-        "Team discussions",
-        "Project coordination",
-      ],
-    },
-  ];
-
-  return (
-    <div className=" max-w-6xl mx-auto px-4 py-16">
-      {/* Header */}
-      <div className="text-center mb-16">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-medium mb-4">
-          <Zap className="w-4 h-4" />
-          Now Available
-        </div>
-        <h2 className="text-4xl font-bold mb-6">
-          Experience Next-Gen
-          <span className="block bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-            Team Communication
-          </span>
-        </h2>
-        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-          Smart Rooms combine the best of chat, code sharing, and collaboration
-          tools into one seamless experience.
-        </p>
-      </div>
-
-      {/* Core Features Grid */}
-      <div className="grid md:grid-cols-2 gap-8 mb-16">
-        {features.map((feature, idx) => (
-          <div
-            key={idx}
-            className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-8 hover:shadow-lg transition-all duration-300"
-          >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 p-2.5 text-white mb-6">
-              <feature.icon className="w-full h-full" />
-            </div>
-            <h3 className="text-xl font-semibold mb-4">{feature.title}</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              {feature.description}
-            </p>
-            <ul className="space-y-3">
-              {feature.highlights.map((highlight, hidx) => (
-                <li
-                  key={hidx}
-                  className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
-                >
-                  <CheckCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                  {highlight}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-
-      {/* Key Benefits */}
-      <div className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-8 mb-16">
-        <h3 className="text-2xl font-semibold mb-8 text-center">
-          Why Teams Love Smart Rooms
-        </h3>
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            {
-              icon: Timer,
-              title: "Save Time",
-              description:
-                "Reduce meeting time by 40% with async voice messages and structured discussions",
-            },
-            {
-              icon: Users,
-              title: "Better Collaboration",
-              description:
-                "Keep everyone aligned with rich content sharing and instant feedback",
-            },
-            {
-              icon: Link,
-              title: "Stay Connected",
-              description:
-                "Bridge the gap between remote and office teams with seamless communication",
-            },
-          ].map((benefit, idx) => (
-            <div key={idx} className="text-center">
-              <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 p-2.5 text-orange-600 dark:text-orange-400 mx-auto mb-4">
-                <benefit.icon className="w-full h-full" />
-              </div>
-              <h4 className="font-semibold mb-2">{benefit.title}</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {benefit.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Use Cases */}
-      <div className="grid md:grid-cols-3 gap-8">
-        {useCases.map((useCase, idx) => (
-          <div
-            key={idx}
-            className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-6"
-          >
-            <h4 className="font-semibold mb-4">{useCase.title}</h4>
-            <ul className="space-y-3">
-              {useCase.scenarios.map((scenario, sidx) => (
-                <li
-                  key={sidx}
-                  className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
-                >
-                  <CheckCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                  {scenario}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export const EnhancedCTA = () => {
-  const router = useRouter();
-  return (
-    <section className="relative py-20">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-b from-orange-50 to-amber-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_500px_at_50%_200px,rgba(249,115,22,0.1),transparent)]" />
-      </div>
-
-      {/* Content */}
-      <div className="relative max-w-6xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-medium mb-6">
-            <Star className="w-4 h-4" />
-            Join Early Adopters
-          </div>
-
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Join the Future of
-            <span className="pb-2 block bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mt-2">
-              Community Engagement
-            </span>
-          </h2>
-
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
-            Be part of the revolution in online communities. Create meaningful
-            discussions, validate knowledge, and engage with passionate
-            individuals.
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
-            onClick={() => router.push("/rooms")}
-            className="group px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300"
-          >
-            <span className="flex items-center gap-2">
-              Get Started Now
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Decorative Elements */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
-    </section>
   );
 };

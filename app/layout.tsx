@@ -2,111 +2,114 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "@/components/darkMode/theme-provider";
 import Navbar from "@/components/navbar/Navbar";
 import { Providers } from "@/providers/providers";
-import React from "react";
+import React, { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
-const ibm_plex_sans = IBM_Plex_Sans({
+const ibmPlexSans = IBM_Plex_Sans({
   weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   variable: "--font-ibm-plex-sans",
   display: "swap",
+  preload: true,
+  fallback: ["system-ui", "sans-serif"],
 });
 
 export const metadata: Metadata = {
-  title: "Domora - Rooms and Community",
-  description: "Join the next generation of social engagement where communities come alive through interactive battles, trust-based validation, and micro-learning. Experience structured debates, fact-checking, and knowledge sharing in an innovative social ecosystem.",
-  keywords: "social platform, community engagement, battle arena, knowledge validation, fact-checking, micro-learning, interactive discussions, trust system, smart rooms, community innovation, online debates, social learning",
-
-  // Open Graph metadata (Facebook, LinkedIn, WhatsApp)
-  openGraph: {
-    title: "Domora | Where Communities Come Alive",
-    description: "Revolutionary social platform featuring interactive battles, trust-based validation, and micro-learning. Join the future of online community engagement.",
-    type: "website",
-    locale: "en_US",
-    siteName: "Domora",
-    images: [
-      {
-        url: "/images/og-image.jpg", // Replace with your actual image path
-        width: 1200,
-        height: 630,
-        alt: "Domora - Community Battle Arena",
-      }
-    ],
+  title: {
+    default: "Domora - Rooms and Community",
+    template: "%s | Domora"
   },
-
-  // Twitter Card metadata
-  twitter: {
-    card: "summary_large_image",
-    site: "https://x.com/akshay_gaddi", // Replace with your Twitter handle
-    title: "Domora - Interactive Community Battle Arena",
-    description: "Experience the future of social engagement with interactive battles, trust-based validation, and micro-learning. Join our innovative community platform.",
-    images: ["/images/twitter-card.jpg"], // Replace with your actual image path
-  },
-
-  // Additional social media metadata
-  other: {
-    "pinterest:description": "Discover Domora - The revolutionary community platform for interactive learning and engagement",
-    "pinterest:image": "/images/pinterest-image.jpg", // Replace with your actual image path
-    "linkedin:image": "/images/linkedin-image.jpg", // Replace with your actual image path
-    "instagram:image": "/images/instagram-image.jpg", // Replace with your actual image path
-  },
-
-  // Additional metadata
-  authors: [{ name: "Domora Team" }],
-  category: "Social Platform",
-  robots: {
-    index: true,
-    follow: true,
-    "max-image-preview": "large",
-    "max-snippet": -1,
-    "max-video-preview": -1,
-  },
-
-  // Additional tags for better SEO
-  alternates: {
-    canonical: "https://domora.vercel.app/", // Replace with your actual domain
-  },
-
-  verification: {
-    google: "your-google-verification-code", // Replace with your verification code
-    yandex: "your-yandex-verification-code", // Replace with your verification code
-    other: {
-      "facebook-domain-verification": "your-facebook-verification-code", // Replace with your verification code
-    },
-  },
-
-  // Additional metadata for rich snippets
-  applicationName: "Domora",
-  generator: "Next.js",
-  referrer: "origin-when-cross-origin",
-  creator: "Domora Team",
-  publisher: "Domora",
-  formatDetection: {
-    telephone: true,
-    date: true,
-    address: true,
-    email: true,
-  },
+  description: "Join the next generation of social engagement where communities come alive through interactive battles, trust-based validation, and micro-learning.",
 };
-export default async function RootLayout({
-                                           children,
-                                         }: Readonly<{
+
+const NavbarWrapper = async () => {
+  try {
+    const supabase = await createClient();
+    const { data: user, error } = await supabase.auth.getUser();
+
+    if (error) {
+      console.error('Auth error:', error);
+      return <Navbar user={null} />;
+    }
+
+    return <Navbar user={user} />;
+  } catch (error) {
+    console.error('Failed to load user:', error);
+    return <Navbar user={null} />;
+  }
+};
+
+const NavbarLoading = () => (
+  <div className="fixed top-0 w-full z-50">
+    <div className="h-16 bg-background/80 backdrop-blur-lg border-b">
+      <div className="container mx-auto h-full">
+        <div className="flex items-center justify-between h-full px-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-muted animate-pulse" />
+            <div className="w-24 h-8 rounded-xl bg-muted animate-pulse" />
+          </div>
+
+          <div className="hidden md:flex items-center gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-20 h-8 rounded-xl bg-muted animate-pulse" />
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-muted animate-pulse" />
+            <div className="w-9 h-9 rounded-xl bg-muted animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const SkipToContent = () => (
+  <a
+    href="#main-content"
+    className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:rounded-xl"
+  >
+    Skip to main content
+  </a>
+);
+
+export default function RootLayout({
+                                     children,
+                                   }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const { data: user } = await supabase.auth.getUser();
   return (
-    <html lang="en" suppressHydrationWarning>
-    <body className={`${ibm_plex_sans.className} bg-white dark:bg-gray-950`}>
+    <html lang="en" suppressHydrationWarning className={ibmPlexSans.variable}>
+    <body className="font-sans min-h-screen flex flex-col bg-background text-foreground">
     <Providers>
-      <div className="min-h-screen flex flex-col">
-        <Navbar user={user} />
-        <main className="flex-1 pt-24 bg-gradient-to-b from-white via-orange-50/30 to-amber-50/30 dark:from-gray-950 dark:via-orange-900/5 dark:to-amber-900/5">
+      <SkipToContent />
+
+      <header className="relative z-50">
+        <ErrorBoundary fallback={<NavbarLoading />}>
+          <Suspense fallback={<NavbarLoading />}>
+            <NavbarWrapper />
+          </Suspense>
+        </ErrorBoundary>
+      </header>
+
+      <main id="main-content" className="flex-1 relative z-0 w-full pt-16">
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-background via-accent to-muted animate-gradient-x"
+          style={{ backgroundSize: '400% 400%' }}
+          aria-hidden="true"
+        />
+
+        {/* Remove container class from here to allow full-width content */}
+        <div className="relative w-full">
           {children}
-        </main>
+        </div>
+      </main>
+
+      <div className="relative z-50">
         <Toaster />
       </div>
     </Providers>

@@ -274,7 +274,7 @@ const RoomSidebar = ({ selectedRoom, onRoomSelect, isMobile, onClose }) => {
             ) : (
               <Alert>
                 <AlertDescription>
-                  No rooms found. Try adjusting your search or create a new
+                  No rooms found. <br /> Try adjusting your search or <br /> create a new
                   room.
                 </AlertDescription>
               </Alert>

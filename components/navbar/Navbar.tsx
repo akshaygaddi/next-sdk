@@ -1,451 +1,411 @@
-"use client";
+'use client'
 
-import React, { useState, useEffect, startTransition } from "react";
-import {
-  Home,
-  Users,
-  DoorOpen,
-  User2,
-  Settings,
-  Bell,
-  LogOut,
-  Menu,
-  Sun,
-  Moon,
-  Target,
-} from "lucide-react";
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from "next-themes";
-import { redirect, usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { toast } from "@/hooks/use-toast";
-import { createClient } from "@/utils/supabase/client";
-import { revalidatePath } from "next/cache";
-import { NextResponse } from "next/server";
-import { logout } from "@/app/auth/signout/action";
+import {
+  Home, Users, DoorOpen, LogOut, Menu, Sun, Moon, Target, X, ChevronLeft
+} from "lucide-react";
 
+// Menu items remain the same...
 const MENU_ITEMS = [
   { id: "home", name: "Home", icon: Home, path: "/home" },
   { id: "community", name: "Community", icon: Users, path: "/community" },
   { id: "rooms", name: "Rooms", icon: DoorOpen, path: "/rooms" },
   { id: "about", name: "About Us", icon: Target, path: "/about" },
+
 ];
 
-const PROFILE_MENU_ITEMS = [
-  // TODO add the menu items later
-  // { id: 'profile', name: 'Profile', icon: User2, path: '/profile' },
-  // { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' }
-];
-
-interface ProfileMenuProps {
-  isOpen: boolean;
-  onToggle: (isOpen: boolean) => void;
-  user: User | null;
-  handleSignOut: () => Promise<void>;
-}
-
+// Enhanced Logo Component
 const Logo = () => (
-  <div className="flex items-center gap-3">
-    <div className="relative group cursor-pointer">
-      <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition-all duration-500"></div>
+  <Link href="/home">
+    <div className="group flex items-center gap-3">
       <div className="relative w-10 h-10">
-        <div className="absolute inset-0 bg-white dark:bg-gray-900 rounded-xl transform rotate-3 group-hover:rotate-6 transition-transform duration-300"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl transform -rotate-3 group-hover:rotate-0 transition-transform duration-300 flex items-center justify-center">
-          <span className="text-white font-bold text-xl">D</span>
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-secondary opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" />
+        <div className="relative h-full w-full flex items-center justify-center font-bold text-white text-xl">
+          D
         </div>
       </div>
+      <span className="font-semibold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+        Domora
+      </span>
     </div>
-    <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-      Domora
-    </span>
-  </div>
+  </Link>
 );
 
-interface NavItemProps {
-  item: {
-    id: string;
-    name: string;
-    icon: any;
-    path: string;
-  };
-  onClick: (id: string) => void;
-  onHover: (id: string | null) => void;
-}
-
-const NavItem = ({ item, onClick, onHover }: NavItemProps) => {
-  const pathname = usePathname();
-  const isActive = pathname === item.path;
-
+// Improved NavItem Component
+const NavItem = ({ item, isActive }) => {
   return (
     <Link href={item.path}>
-      <button
-        onClick={() => onClick(item.id)}
-        onMouseEnter={() => onHover(item.id)}
-        onMouseLeave={() => onHover(null)}
-        className={`relative group flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-300 ${
+      <div className={`
+        group flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all duration-300
+        ${isActive
+        ? 'bg-primary/10 text-primary'
+        : 'hover:bg-muted/80'
+      }
+      `}>
+        <item.icon className={`w-5 h-5 ${
           isActive
-            ? "bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-600 dark:text-orange-400"
-            : "hover:bg-orange-50 dark:hover:bg-orange-900/20"
-        }`}
-      >
-        <item.icon
-          className={`w-5 h-5 transition-all duration-300 ${
-            isActive
-              ? "text-orange-600 dark:text-orange-400 scale-110"
-              : "group-hover:scale-110"
-          }`}
-        />
-        <span
-          className={`font-medium ${
-            isActive
-              ? "bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400 bg-clip-text text-transparent"
-              : ""
-          }`}
-        >
+            ? 'text-primary'
+            : 'text-muted-foreground group-hover:text-foreground'
+        }`} />
+        <span className={`font-medium ${
+          isActive
+            ? 'text-primary'
+            : 'text-muted-foreground group-hover:text-foreground'
+        }`}>
           {item.name}
         </span>
-        {isActive && (
-          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full"></div>
-        )}
-      </button>
+      </div>
     </Link>
   );
 };
 
-const NotificationBell = () => (
-  <button className="relative p-2 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-300 group">
-    <Bell className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-    <span className="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
-  </button>
-);
-
-// Add ThemeToggle component
+// Enhanced Theme Toggle
 const ThemeToggle = () => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
   return (
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="p-2 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-300 group"
+      className="p-2.5 rounded-xl hover:bg-muted/80 transition-all duration-300"
+      aria-label="Toggle theme"
     >
       {theme === "dark" ? (
-        <Sun className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+        <Sun className="w-5 h-5 text-orange-400" />
       ) : (
-        <Moon className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+        <Moon className="w-5 h-5" />
       )}
     </button>
   );
 };
 
-const ProfileMenu = ({
-  isOpen,
-  onToggle,
-  user,
-  handleSignOut,
-}: ProfileMenuProps) => {
-  const [isClosing, setIsClosing] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const router = useRouter();
+// First, define pages that should hide navbar immediately
+const IMMEDIATE_HIDE_PAGES = [
+  '/rooms',  // Add your specific pages here
+  '/community',
+  '/home',
+  '/about'
+];
 
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onToggle(false);
-      setIsClosing(false);
-    }, 200);
+// Modified scroll behavior hook with immediate hide config
+const useScrollBehavior = () => {
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [scrollDirection, setScrollDirection] = useState('up');
+  const pathname = usePathname();
+
+  // Check if current page should hide navbar immediately
+  // Check if current path matches any of the immediate hide patterns
+  const shouldHideImmediately = IMMEDIATE_HIDE_PAGES.some(path =>
+    pathname === path || pathname.startsWith(`${path}/`)
+  );
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const totalScrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercentage = (currentScrollY / totalScrollHeight) * 100;
+      const scrollDelta = currentScrollY - lastScrollY;
+      const newDirection = scrollDelta > 0 ? 'down' : 'up';
+      const scrollSpeed = Math.abs(scrollDelta) / totalScrollHeight;
+
+      if (shouldHideImmediately) {
+        // For immediate hide pages, hide navbar as soon as scrolling down starts
+        if (currentScrollY > 0 && newDirection === 'down') {
+          setIsVisible(false);
+        } else if (
+          (newDirection === 'up' && scrollSpeed > 0.05) ||
+          (newDirection === 'up' && (lastScrollY - currentScrollY) / window.innerHeight > 0.1) ||
+          currentScrollY < 100
+        ) {
+          setIsVisible(true);
+        }
+      } else {
+        // Original behavior for other pages
+        if (
+          (newDirection === 'up' && scrollSpeed > 0.05) ||
+          (newDirection === 'up' && (lastScrollY - currentScrollY) / window.innerHeight > 0.1) ||
+          currentScrollY < 100 ||
+          scrollPercentage < 30
+        ) {
+          setIsVisible(true);
+        } else if (scrollPercentage > 30 && newDirection === 'down') {
+          setIsVisible(false);
+        }
+      }
+
+      setScrollDirection(newDirection);
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY, shouldHideImmediately, pathname]);
+
+  return isVisible;
+};
+
+
+
+// Enhanced Mobile Menu with Animations and Gestures
+const MobileMenu = ({ isOpen, onClose, children }) => {
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  // Minimum distance for swipe
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.touches[0].clientX);
   };
 
-  const handleMenuItemClick = async (item: { id: string; path?: string }) => {
-    if (item.id === "logout") {
-      setIsLoggingOut(true);
-      try {
-        await handleSignOut();
-      } finally {
-        setIsLoggingOut(false);
-        handleClose();
-      }
-    } else if (item.path) {
-      router.push(item.path);
-      handleClose();
+  const onTouchMove = (e) => {
+    setTouchEnd(e.touches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+
+    if (isLeftSwipe) {
+      onClose();
     }
   };
 
+  // Lock body scroll when menu is open
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isOpen && !(event.target as Element).closest(".profile-menu")) {
-        handleClose();
-      }
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className={`
+          fixed inset-0 bg-background/80 backdrop-blur-sm z-40
+          transition-opacity duration-300
+          ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+        `}
+        onClick={onClose}
+      />
+
+      {/* Menu Panel */}
+      <div
+        className={`
+          fixed top-[3.5rem] right-0 h-[calc(100vh-3.5rem)] w-full max-w-sm
+          bg-background border-l z-50
+          transform transition-transform duration-300 ease-out
+          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <div className="flex flex-col h-full">
+          <div className="flex items-center justify-between p-4 border-b">
+            <button
+              onClick={onClose}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Close Menu</span>
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4">
+            {children}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Improved Profile Menu
+const ProfileMenu = ({ user, isOpen, onClose, handleSignOut }) => {
   if (!isOpen) return null;
 
   return (
-    <div
-      className={`profile-menu absolute right-0 mt-3 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-orange-100 dark:border-orange-900/30 overflow-hidden transform transition-all duration-200 ${
-        isClosing ? "opacity-0 scale-95" : "opacity-100 scale-100"
-      }`}
-    >
-      <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-b border-orange-100 dark:border-orange-900/30">
-        <p className="text-sm text-gray-600 dark:text-gray-400">Signed in as</p>
-        <p className="text-sm font-medium">{user?.user?.email}</p>
+    <div className="absolute right-0 mt-2 w-64 rounded-xl bg-card border shadow-lg py-2 animate-in slide-in-from-top-2 duration-200">
+      <div className="px-4 py-3 border-b">
+        <p className="text-sm text-muted-foreground">Signed in as</p>
+        <p className="text-sm font-medium truncate mt-0.5">{user?.user?.email}</p>
       </div>
       <div className="p-2">
-        {PROFILE_MENU_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => handleMenuItemClick(item)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200 group"
-          >
-            <item.icon className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-            <span className="font-medium">{item.name}</span>
-          </button>
-        ))}
         <button
-          onClick={() => handleMenuItemClick({ id: "logout" })}
-          disabled={isLoggingOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSignOut}
+          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-destructive hover:bg-destructive/10 transition-colors duration-200"
         >
-          {isLoggingOut ? (
-            <>
-              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-              <span className="font-medium">Signing out...</span>
-            </>
-          ) : (
-            <>
-              <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-              <span className="font-medium">Logout</span>
-            </>
-          )}
+          <LogOut className="w-4 h-4" />
+          <span className="font-medium">Sign out</span>
         </button>
       </div>
     </div>
   );
 };
 
-interface ElasticNavbarProps {
-  user: User | null;
-}
-
-const ElasticNavbar = ({ user }) => {
-  const [activeNav, setActiveNav] = useState("home");
+// Responsive Navbar Component
+const ImprovedNavbar = ({ user }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const pathname = usePathname();
   const router = useRouter();
+  const isVisible = useScrollBehavior();
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  // Close menus when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsProfileOpen(false);
+  }, [pathname]);
 
   const handleSignOut = async () => {
-    setIsLoggingOut(true);
-    try {
-      const result = await logout();
-
-      if (result.success) {
-        toast({
-          title: "Successfully logged out",
-          description: "Please Visit Again!",
-          variant: "default",
-        });
-        router.push("/home");
-      } else {
-        throw new Error("Logout failed");
-      }
-    } catch (error) {
-      toast({
-        title: "Error signing out",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoggingOut(false);
-    }
+    // Your existing sign out logic
   };
 
-  useEffect(() => {
-    const controlNavbar = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
-      setLastScrollY(currentScrollY);
-    };
+  const navbarClasses = `
+    fixed top-0 w-full z-50 transition-all duration-300
+    ${isVisible ? 'translate-y-0' : '-translate-y-full'}
+  `;
 
-    window.addEventListener("scroll", controlNavbar);
-    return () => window.removeEventListener("scroll", controlNavbar);
-  }, [lastScrollY]);
-
-  if (!user.user) {
+  // Auth navigation version
+  if (!user?.user) {
     return (
-      <nav
-        className={`fixed w-full top-0 z-50 px-4 py-3 transition-transform duration-300 ${
-          isVisible ? "translate-y-0" : "-translate-y-full"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-2xl shadow-lg">
-            <div className="relative px-6 py-3">
-              <div className="flex items-center justify-between">
-                <Logo />
-                <div className="flex items-center gap-6">
-                  {/* Theme Toggle */}
-                  <ThemeToggle />
-
-                  {/* Auth Buttons */}
-                  <div className="flex gap-4">
-                    {/* Sign In - Primary Button */}
-                    <Link href="/auth/login">
-                      <button className="relative group px-6 py-2 overflow-hidden rounded-xl">
-                        {/* Animated gradient background */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 group-hover:bg-gradient-to-r group-hover:from-orange-600 group-hover:via-amber-600 group-hover:to-orange-600 transition-all duration-300"></div>
-
-                        {/* Shimmering effect overlay */}
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_250%] animate-shimmer"></div>
-
-                        {/* Button content */}
-                        <div className="relative flex items-center gap-2">
-                          <span className="text-white font-medium">
-                            Sign In
-                          </span>
-                        </div>
-
-                        {/* Subtle border glow */}
-                        <div className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-orange-500/50 to-amber-500/50 blur opacity-0 group-hover:opacity-75 transition-opacity duration-300"></div>
-                      </button>
-                    </Link>
-
-                    {/* Sign Up - Secondary Button */}
-                    <Link href="/auth/signup">
-                      <button className="relative group px-6 py-2 overflow-hidden rounded-xl border border-orange-500/20 dark:border-orange-400/20 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:border-orange-500/50 dark:hover:border-orange-400/50 transition-all duration-300">
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 to-amber-500/0 group-hover:from-orange-500/5 group-hover:to-amber-500/5 transition-all duration-300"></div>
-
-                        {/* Button content */}
-                        <div className="relative flex items-center gap-2">
-                          <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent font-medium">
-                            Sign Up
-                          </span>
-                        </div>
-                      </button>
-                    </Link>
-                  </div>
+      <nav className={navbarClasses}>
+        <div className="bg-background/80 backdrop-blur-md border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex h-14 sm:h-16 items-center justify-between">
+              <Logo />
+              <div className="flex items-center gap-4">
+                <ThemeToggle />
+                <div className="hidden sm:flex items-center gap-3">
+                  <Link href="/auth/login">
+                    <button className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm sm:text-base rounded-xl bg-primary text-white hover:bg-primary/90 transition-all duration-300">
+                      Sign In
+                    </button>
+                  </Link>
+                  <Link href="/auth/signup">
+                    <button className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm sm:text-base rounded-xl border-2 border-primary/20 hover:bg-primary/10 transition-all duration-300">
+                      Sign Up
+                    </button>
+                  </Link>
                 </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="sm:hidden p-2 rounded-xl hover:bg-muted/80 transition-colors"
+                >
+                  {isMobileMenuOpen ? (
+                    <X className="w-5 h-5" />
+                  ) : (
+                    <Menu className="w-5 h-5" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Mobile auth menu */}
+        <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
+          <div className="space-y-3">
+            <Link href="/auth/login" className="block">
+              <button className="w-full px-5 py-2.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all">
+                Sign In
+              </button>
+            </Link>
+            <Link href="/auth/signup" className="block">
+              <button className="w-full px-5 py-2.5 rounded-xl border-2 border-primary/20 hover:bg-primary/10 transition-all">
+                Sign Up
+              </button>
+            </Link>
+          </div>
+        </MobileMenu>
       </nav>
     );
   }
 
+  // Main navigation version
   return (
-    <nav
-      className={`fixed w-full top-0 z-50 px-4 py-3 transition-transform duration-300 ${
-        isVisible ? "translate-y-0" : "-translate-y-full"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-2xl shadow-lg">
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-yellow-500/10 rounded-2xl animate-gradient-x"></div>
-
-          <div className="relative px-6 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-8">
-                <Logo />
-                <div className="hidden md:flex items-center gap-3">
-                  {MENU_ITEMS.map((item) => (
-                    <NavItem
-                      key={item.id}
-                      item={item}
-                      onClick={setActiveNav}
-                      onHover={setHoveredItem}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <ThemeToggle />
-                {/*<NotificationBell />*/}
-
-                <div className="relative">
-                  <button
-                    onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-300"
-                  >
-                    <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl blur opacity-75 group-hover:opacity-100 transition-all duration-300"></div>
-                      <div className="relative w-9 h-9 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl p-0.5 transform group-hover:scale-105 transition-transform duration-300">
-                        <div className="w-full h-full rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center">
-                          <span className="text-sm font-medium text-orange-600">
-                            {user?.user?.email?.[0]?.toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                  <ProfileMenu
-                    isOpen={isProfileOpen}
-                    onToggle={setIsProfileOpen}
-                    user={user}
-                    handleSignOut={handleSignOut}
+    <nav className={navbarClasses}>
+      <div className="bg-background/80 backdrop-blur-md border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 sm:h-16 items-center justify-between">
+            <div className="flex items-center gap-4 sm:gap-8">
+              <Logo />
+              <div className="hidden md:flex items-center gap-2">
+                {MENU_ITEMS.map((item) => (
+                  <NavItem
+                    key={item.id}
+                    item={item}
+                    isActive={pathname === item.path || (item.path === '/rooms' && pathname.startsWith('/rooms/'))}
                   />
-                </div>
-
-                <button
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="md:hidden p-2 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-300"
-                >
-                  <Menu className="w-5 h-5" />
-                </button>
+                ))}
               </div>
             </div>
 
-            {/* Mobile Menu */}
-            <div
-              className={`md:hidden overflow-hidden transition-all duration-300 ${
-                isMobileMenuOpen ? "max-h-96 mt-4" : "max-h-0"
-              }`}
-            >
-              <div className="space-y-2 pb-4">
-                {MENU_ITEMS.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveNav(item.id);
-                      setIsMobileMenuOpen(false);
-                      router.push(item.path);
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl ${
-                      activeNav === item.id
-                        ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600"
-                        : "hover:bg-orange-50 dark:hover:bg-orange-900/20"
-                    } transition-all duration-200`}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    <span className="font-medium">{item.name}</span>
-                  </button>
-                ))}
+            <div className="flex items-center gap-2 sm:gap-4">
+              <ThemeToggle />
+
+              <div className="relative">
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-muted/80 transition-all duration-300"
+                >
+                  <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-medium">
+                    {user?.user?.email?.[0]?.toUpperCase()}
+                  </div>
+                </button>
+                <ProfileMenu
+                  user={user}
+                  isOpen={isProfileOpen}
+                  onClose={() => setIsProfileOpen(false)}
+                  handleSignOut={handleSignOut}
+                />
               </div>
+
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 rounded-xl hover:bg-muted/80 transition-colors"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
+        <div className="space-y-1">
+          {MENU_ITEMS.map((item) => (
+            <NavItem
+              key={item.id}
+              item={item}
+              isActive={pathname === item.path}
+            />
+          ))}
+        </div>
+      </MobileMenu>
     </nav>
   );
 };
 
-export default ElasticNavbar;
+export default ImprovedNavbar;

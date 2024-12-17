@@ -116,14 +116,15 @@ const RoomHeader = ({
     <header className="px-4 py-2 border-b bg-card/50 backdrop-blur-lg">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <HeaderIcon
-            icon={showSidebar ? PanelLeftClose : PanelLeftOpen}
-            onClick={onToggleSidebar}
-            tooltip={showSidebar ? "Hide rooms sidebar" : "Show rooms sidebar"}
-            color={showSidebar ? "#F9802E" : undefined}
-          />
+          {/*<HeaderIcon*/}
+          {/*  icon={showSidebar ? PanelLeftClose : PanelLeftOpen}s*/}
+          {/*  onClick={onToggleSidebar}*/}
+          {/*  tooltip={showSidebar ? "Hide rooms sidebar" : "Show rooms sidebar"}*/}
+          {/*  color={showSidebar ? "#F9802E" : undefined}*/}
+          {/*/>*/}
 
-          <div className="flex flex-col min-w-0">
+
+          <div className="ml-16 flex flex-col min-w-0">
             <div className="flex items-center gap-1 truncate">
               <h1 className="text-base font-semibold truncate">{room.name}</h1>
               {room.type === "private" ? (
