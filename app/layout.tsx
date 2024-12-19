@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+// app/layout.tsx
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -25,6 +26,23 @@ export const metadata: Metadata = {
   description: "Join the next generation of social engagement where communities come alive through interactive battles, trust-based validation, and micro-learning.",
 };
 
+// Add viewport configuration
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#020817' }, // Using your dark mode background color
+  ],
+  colorScheme: 'light dark',
+  // Ensure proper display on iOS devices
+  viewportFit: 'cover',
+  // Improve interaction on iOS
+  interactiveWidget: 'resizes-visual',
+};
+
 const NavbarWrapper = async () => {
   try {
     const supabase = await createClient();
@@ -43,24 +61,24 @@ const NavbarWrapper = async () => {
 };
 
 const NavbarLoading = () => (
-  <div className="fixed top-0 w-full z-50">
+  <div className="fixed top-0 w-full z-50 safe-area-inset">
     <div className="h-16 bg-background/80 backdrop-blur-lg border-b">
-      <div className="container mx-auto h-full">
-        <div className="flex items-center justify-between h-full px-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-muted animate-pulse" />
-            <div className="w-24 h-8 rounded-xl bg-muted animate-pulse" />
+      <div className="container-responsive h-full">
+        <div className="flex items-center justify-between h-full">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-xl bg-muted animate-pulse" />
+            <div className="w-20 sm:w-24 h-6 sm:h-8 rounded-xl bg-muted animate-pulse" />
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3 sm:gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="w-20 h-8 rounded-xl bg-muted animate-pulse" />
+              <div key={i} className="w-16 sm:w-20 h-6 sm:h-8 rounded-xl bg-muted animate-pulse" />
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-muted animate-pulse" />
-            <div className="w-9 h-9 rounded-xl bg-muted animate-pulse" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-muted animate-pulse" />
+            <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-muted animate-pulse" />
           </div>
         </div>
       </div>
@@ -84,7 +102,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={ibmPlexSans.variable}>
-    <body className="font-sans min-h-screen flex flex-col bg-background text-foreground">
+    <body className="font-sans min-h-screen flex flex-col bg-background text-foreground antialiased">
     <Providers>
       <SkipToContent />
 
@@ -96,15 +114,17 @@ export default function RootLayout({
         </ErrorBoundary>
       </header>
 
-      <main id="main-content" className="flex-1 relative z-0 w-full pt-16">
+      <main
+        id="main-content"
+        className="flex-1 relative z-0 w-full pt-16 safe-area-inset"
+      >
         <div
           className="absolute inset-0 bg-gradient-to-b from-background via-accent to-muted animate-gradient-x"
           style={{ backgroundSize: '400% 400%' }}
           aria-hidden="true"
         />
 
-        {/* Remove container class from here to allow full-width content */}
-        <div className="relative w-full">
+        <div className="relative w-full min-h-[calc(100vh-4rem)] pt-16">
           {children}
         </div>
       </main>

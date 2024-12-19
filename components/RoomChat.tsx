@@ -38,6 +38,9 @@ import { toast } from "@/hooks/use-toast";
 import RoomHeader from "@/components/RoomHeader";
 import MessageInput from "@/components/MessageInput";
 import MessageDisplay from "@/components/messageDisplay";
+import { cn } from "@/lib/utils";
+import { CloseIcon } from "next/dist/client/components/react-dev-overlay/internal/icons/CloseIcon";
+import { RealtimeChannel } from "@supabase/realtime-js";
 
 // First, update the Message interface to include deleted status
 interface Message {
@@ -126,7 +129,7 @@ const ParticipantCard = React.memo(({
 // Scroll indicator component
 const ScrollIndicator = ({ onClick, unreadCount }: { onClick: () => void; unreadCount: number }) => (
   <div
-    className="absolute bottom-20 right-8 cursor-pointer bg-primary text-primary-foreground rounded-full p-2 shadow-lg"
+    className="absolute z-50 bottom-20 right-8 cursor-pointer bg-primary text-primary-foreground rounded-full p-2 shadow-lg"
     onClick={onClick}
   >
     <div className="flex items-center gap-2">
@@ -301,6 +304,21 @@ const RoomChat = ({
   const [deletionStates, setDeletionStates] = useState({});
   // Add this state at the top with other state declarations
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+
+  // responsive design specific
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
 
   // Initialize chat data
   useEffect(() => {
@@ -708,15 +726,35 @@ const RoomChat = ({
     }
   };
 
-  // Handle scroll to check if user has read all messages
+  // Enhanced scroll handling
   const handleScroll = useCallback(() => {
-    if (scrollContainerRef.current) {
-      const { scrollHeight, scrollTop, clientHeight } = scrollContainerRef.current;
-      if (scrollHeight - scrollTop - clientHeight < 100) {
-        setUnreadMessages(0);
-      }
+    if (!scrollContainerRef.current) return;
+
+    const { scrollHeight, scrollTop, clientHeight } = scrollContainerRef.current;
+    const bottomThreshold = 100;
+    const newIsAtBottom = scrollHeight - scrollTop - clientHeight < bottomThreshold;
+
+    setIsAtBottom(newIsAtBottom);
+    if (newIsAtBottom) {
+      setUnreadMessages(0);
     }
   }, []);
+
+  // Scroll to bottom on new messages if already at bottom
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (!scrollContainerRef.current) return;
+
+    scrollContainerRef.current.scrollTo({
+      top: scrollContainerRef.current.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isAtBottom && !isComposing) {
+      scrollToBottom();
+    }
+  }, [messages, isAtBottom, isComposing, scrollToBottom]);
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
@@ -745,159 +783,146 @@ const RoomChat = ({
     );
   }
 
+  // Mobile-optimized participants modal
+  const ParticipantsModal = () => (
+    <Dialog open={showParticipantsModal} onOpenChange={setShowParticipantsModal}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Participants ({participants.length})</DialogTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowParticipantsModal(false)}
+            >
+              <CloseIcon  />
+            </Button>
+          </div>
+        </DialogHeader>
+        <ScrollArea className="max-h-[60vh] mt-4">
+          <div className="space-y-2 px-1">
+            {participants.map((participant) => (
+              <ParticipantCard
+                key={participant.user_id}
+                participant={participant}
+                isCreator={participant.user_id === room.created_by}
+                presenceData={presenceData}
+              />
+            ))}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
-    <div className="relative flex h-full bg-background">
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+    <div className="flex flex-col h-full bg-background relative">
+      {/* Mobile-optimized header */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b">
         <RoomHeader
           room={room}
           participants={participants}
           showSidebar={showSidebar}
-          showParticipants={showParticipants}
           currentUser={currentUser}
           onToggleSidebar={onToggleSidebar}
-          setShowParticipants={setShowParticipants}
-          handleLeaveRoom={handleLeaveRoom}
+          onShowParticipants={() => setShowParticipantsModal(true)}
+          isMobile={isMobile}
         />
-
-        {/* Messages Area */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto p-4"
-        >
-          {messages.map((message, index) => {
-            const showAvatar = index === 0 ||
-              messages[index - 1]?.user_id !== message.user_id ||
-              new Date(message.created_at).getTime() - new Date(messages[index - 1]?.created_at).getTime() > 300000;
-
-            const isSelected = selectedMessages.some(m => m.id === message.id);
-            const selectionMode = selectedMessages.length > 0;
-
-            return (
-              <MessageDisplay
-                key={message.id}
-                message={message}
-                currentUser={currentUser}
-                showAvatar={showAvatar}
-                isSelected={isSelected}
-                onSelect={handleMessageSelect}
-                presenceData={presenceData}
-                selectionMode={selectionMode}
-                deletionState={deletionStates[message.id]} // Pass deletion state to MessageDisplay
-              />
-            );
-          })}
-
-          {/* Scroll indicator for unread messages */}
-          {unreadMessages > 0 && (
-            <ScrollIndicator
-              onClick={() => {
-                if (scrollContainerRef.current) {
-                  scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-                  setUnreadMessages(0);
-                }
-              }}
-              unreadCount={unreadMessages}
-            />
-          )}
-        </div>
-
-        {/* Message Input */}
-        <div className="p-4 border-t">
-          <MessageInput
-            onSendMessage={handleSendMessage}
-            disabled={false}
-          />
-        </div>
       </div>
 
-      {/* Participants Sidebar */}
+      {/* Messages Area with improved scroll handling */}
       <div
-        className={`${
-          showParticipants ? "w-80" : "w-0"
-        } transition-all duration-300 overflow-hidden border-l bg-card/50 backdrop-blur-sm`}
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className={cn(
+          "flex-1 overflow-y-auto",
+          "scroll-smooth",
+          "overscroll-y-contain", // Better iOS scroll behavior
+          "touch-pan-y", // Smoother touch scrolling
+          "bg-dot-pattern" // Optional: subtle background pattern
+        )}
       >
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Participants</h2>
-            <Badge variant="secondary" className="h-6">
-              <Users className="h-3 w-3 mr-1" />
-              {participants.length}
-            </Badge>
-          </div>
-
-          <ScrollArea className="h-[calc(100vh-8rem)]">
-            <div className="space-y-1">
-              {participants
-                .sort((a, b) => {
-                  if (a.user_id === room.created_by) return -1;
-                  if (b.user_id === room.created_by) return 1;
-                  return 0;
-                })
-                .map((participant) => (
-                  <ParticipantCard
-                    key={participant.user_id}
-                    participant={participant}
-                    isCreator={participant.user_id === room.created_by}
-                    presenceData={presenceData}
-                  />
-                ))}
-            </div>
-          </ScrollArea>
+        <div className="flex flex-col gap-1 p-4">
+          {messages.map((message, index) => (
+            <MessageDisplay
+              key={message.id}
+              message={message}
+              currentUser={currentUser}
+              showAvatar={
+                index === 0 ||
+                messages[index - 1]?.user_id !== message.user_id ||
+                new Date(message.created_at).getTime() -
+                new Date(messages[index - 1]?.created_at).getTime() >
+                300000
+              }
+              isSelected={selectedMessages.some(m => m.id === message.id)}
+              onSelect={handleMessageSelect}
+              presenceData={presenceData}
+              selectionMode={selectedMessages.length > 0}
+              deletionState={deletionStates[message.id]}
+              isMobile={isMobile}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Bulk Action Menu */}
-      {selectedMessages.length > 0 && (
-        <BulkActionMenu
-          selectedMessages={selectedMessages}
-          onDelete={(messageIds) => {
-            setMessagesToDelete(messageIds);
-            setDeleteDialogOpen(true);
-          }}
-          onEdit={(message) => {
-            setEditMessage(message);
-            setIsEditDialogOpen(true);
-          }}
-          currentUser={currentUser}
-        />
+      {/* Floating scroll indicator */}
+      {!isAtBottom && unreadMessages > 0 && (
+        <button
+          onClick={() => scrollToBottom()}
+          className={cn(
+            "absolute bottom-20 right-4",
+            "flex items-center gap-2 px-3 py-2",
+            "bg-primary text-primary-foreground",
+            "rounded-full shadow-lg",
+            "transform transition-transform",
+            "hover:scale-105 active:scale-95",
+            "focus:outline-none focus:ring-2 focus:ring-primary/50"
+          )}
+        >
+          <ArrowLeftFromLine className="h-4 w-4 rotate-90" />
+          <span className="text-sm font-medium">{unreadMessages} new</span>
+        </button>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-destructive">
-              Delete {messagesToDelete.length > 1 ? 'Messages' : 'Message'}
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {messagesToDelete.length === 1 ? 'this message' : `these ${messagesToDelete.length} messages`}?
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => handleDeleteMessages(messagesToDelete)}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                `Delete ${messagesToDelete.length > 1 ? 'Messages' : 'Message'}`
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Message Input with composition handling */}
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t p-4">
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          disabled={false}
+          onCompositionStart={() => setIsComposing(true)}
+          onCompositionEnd={() => setIsComposing(false)}
+          isMobile={isMobile}
+        />
+      </div>
 
-      {/* Edit Message Dialog */}
+      {/* Selection Actions */}
+      {selectedMessages.length > 0 && (
+        <div
+          className={cn(
+            "fixed bottom-20 left-1/2 -translate-x-1/2",
+            "flex items-center gap-2 p-2",
+            "bg-background/95 backdrop-blur-sm",
+            "border rounded-lg shadow-lg",
+            "transform transition-all",
+            "animate-in slide-in-from-bottom",
+            isMobile ? "w-[90%]" : "w-auto"
+          )}
+        >
+          <BulkActionMenu
+            selectedMessages={selectedMessages}
+            onDelete={handleDeleteMessages}
+            onEdit={handleEditMessage}
+            currentUser={currentUser}
+            isMobile={isMobile}
+          />
+        </div>
+      )}
+
+      {/* Mobile Participants Modal */}
+      {isMobile && <ParticipantsModal />}
+
+      {/* Edit Dialog */}
       <EditMessageDialog
         isOpen={isEditDialogOpen}
         onClose={() => {
@@ -907,6 +932,7 @@ const RoomChat = ({
         }}
         message={editMessage}
         onSave={handleEditMessage}
+        isMobile={isMobile}
       />
     </div>
   );

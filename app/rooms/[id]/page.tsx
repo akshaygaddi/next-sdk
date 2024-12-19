@@ -1,6 +1,7 @@
+// app/rooms/[id]/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2, PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import RoomChat from "@/components/RoomChat";
@@ -10,6 +11,11 @@ import { toast } from "@/hooks/use-toast";
 import EmptyRoomsState from "@/components/EmptyRoomState";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const SIDEBAR_BREAKPOINT = 768; // md breakpoint
+const DEFAULT_SIDEBAR_WIDTH = 320;
+const MIN_SIDEBAR_WIDTH = 280;
+const MAX_SIDEBAR_WIDTH = 480;
 
 const RoomsPage = () => {
   const router = useRouter();
@@ -21,7 +27,82 @@ const RoomsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasRooms, setHasRooms] = useState(false);
   const [isRoomLoading, setIsRoomLoading] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(320); // Default width
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // mobile detection
+
+  // Enhanced mobile detection with debounce
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        const isMobileView = window.innerWidth < SIDEBAR_BREAKPOINT;
+        setIsMobile(isMobileView);
+
+        // Auto-hide sidebar on mobile when room is selected
+        if (isMobileView && selectedRoom) {
+          setShowSidebar(false);
+        } else if (!isMobileView && !showSidebar) {
+          setShowSidebar(true);
+        }
+
+        // Reset sidebar width on mobile
+        if (isMobileView) {
+          setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
+        }
+      }, 150); // Debounce time
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [selectedRoom, showSidebar]);
+
+  // Sidebar resizing functionality
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    if (isMobile) return;
+
+    setIsResizing(true);
+    const startX = e.pageX;
+    const startWidth = sidebarWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      const newWidth = startWidth + (e.pageX - startX);
+      const clampedWidth = Math.max(MIN_SIDEBAR_WIDTH,
+        Math.min(MAX_SIDEBAR_WIDTH, newWidth));
+
+      setSidebarWidth(clampedWidth);
+      localStorage.setItem('sidebarWidth', clampedWidth.toString());
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [isMobile, isResizing, sidebarWidth]);
+
+  // Load saved sidebar width
+  useEffect(() => {
+    const savedWidth = localStorage.getItem('sidebarWidth');
+    if (savedWidth && !isMobile) {
+      setSidebarWidth(Number(savedWidth));
+    }
+  }, [isMobile]);
+
+  // end
 
   // Check user's rooms
   useEffect(() => {
@@ -186,14 +267,15 @@ const RoomsPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background relative">
-      {/* Sidebar */}
+    <div className="flex h-[100dvh] bg-background relative overflow-hidden">
+      {/* Sidebar with resize handle */}
       <div
         className={cn(
-          "transition-all duration-300 ease-in-out overflow-hidden",
+          "transition-all duration-300 ease-in-out relative",
           "bg-card/50 backdrop-blur-sm border-r",
           isMobile ? "absolute z-50 h-full" : "relative",
-          showSidebar ? `w-[${sidebarWidth}px]` : "w-0"
+          showSidebar ? `w-[${sidebarWidth}px]` : "w-0",
+          isResizing && "select-none"
         )}
       >
         <RoomSidebar
@@ -202,22 +284,37 @@ const RoomsPage = () => {
           isMobile={isMobile}
           onClose={() => setShowSidebar(false)}
           className={cn(
-            "transition-opacity duration-300",
+            "h-full transition-opacity duration-300",
             showSidebar ? "opacity-100" : "opacity-0"
           )}
         />
+
+        {/* Resize handle */}
+        {!isMobile && showSidebar && (
+          <div
+            className={cn(
+              "absolute top-0 right-0 w-1 h-full cursor-col-resize",
+              "hover:bg-primary/20 active:bg-primary/40 transition-colors",
+              isResizing && "bg-primary/40"
+            )}
+            onMouseDown={handleResizeStart}
+          />
+        )}
       </div>
 
-      {/* Toggle Sidebar Button */}
+      {/* Toggle Sidebar Button - Enhanced for mobile */}
       <Button
         variant="ghost"
         size="icon"
         className={cn(
-          "absolute top-4 transition-all duration-300",
-          showSidebar ? "left-[336px]" : "left-4",
-          "z-50"
+          "fixed transition-all duration-300 z-[60]",
+          "hover:bg-background/80 hover:shadow-md",
+          showSidebar
+            ? `left-[${sidebarWidth}px] top-4`
+            : "left-4 top-4",
+          isMobile && "bg-background/80 backdrop-blur-sm shadow-sm"
         )}
-        onClick={handleToggleSidebar}
+        onClick={() => setShowSidebar(!showSidebar)}
       >
         {showSidebar ? (
           <PanelLeftClose className="w-4 h-4" />
@@ -226,7 +323,7 @@ const RoomsPage = () => {
         )}
       </Button>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
         {isRoomLoading ? (
           <div className="flex items-center justify-center h-full">
@@ -236,7 +333,7 @@ const RoomsPage = () => {
           <RoomChat
             room={selectedRoom}
             showSidebar={showSidebar}
-            onToggleSidebar={handleToggleSidebar}
+            onToggleSidebar={() => setShowSidebar(!showSidebar)}
           />
         ) : (
           <EmptyRoomsState isLoading={isLoading} hasRooms={hasRooms} />
